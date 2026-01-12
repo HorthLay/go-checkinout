@@ -364,33 +364,43 @@
       </main>
     </div>
 
-    <!-- CORRECT ORDER: Livewire Scripts FIRST -->
     @livewireScripts
-    
-    <!-- Alpine.js AFTER Livewire -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    
-    <!-- Custom Scripts LAST -->
     <script>
       // Wait for DOM to be ready
       document.addEventListener('DOMContentLoaded', function() {
-        // Mobile Menu Toggle
-        const menuToggle = document.getElementById("menu-toggle");
-        const mobileMenu = document.getElementById("mobile-menu");
+   
 
-        if (menuToggle && mobileMenu) {
-          menuToggle.addEventListener("click", (e) => {
-            e.stopPropagation();
-            mobileMenu.classList.toggle("hidden");
-          });
-          
-          // Close on click outside
-          document.addEventListener("click", (e) => {
-            if (mobileMenu && !menuToggle.contains(e.target) && !mobileMenu.contains(e.target)) {
-              mobileMenu.classList.add("hidden");
-            }
-          });
+
+         // Mobile Menu & Profile Dropdown
+      const menuToggle = document.getElementById("menu-toggle");
+      const mobileMenu = document.getElementById("mobile-menu");
+      const profileToggle = document.getElementById("profile-toggle");
+      const profileDropdown = document.getElementById("profile-dropdown");
+
+      if (menuToggle && mobileMenu) {
+        menuToggle.addEventListener("click", (e) => {
+          e.stopPropagation();
+          mobileMenu.classList.toggle("hidden");
+        });
+      }
+
+      if (profileToggle && profileDropdown) {
+        profileToggle.addEventListener("click", (e) => {
+          e.stopPropagation();
+          profileDropdown.classList.toggle("hidden");
+        });
+      }
+
+      document.addEventListener("click", (e) => {
+        if (profileToggle && profileDropdown && !profileToggle.contains(e.target) && !profileDropdown.contains(e.target)) {
+          profileDropdown.classList.add("hidden");
         }
+        if (menuToggle && mobileMenu && !menuToggle.contains(e.target) && !mobileMenu.contains(e.target)) {
+          mobileMenu.classList.add("hidden");
+        }
+      });
+
+
 
         // Attendance Trend Chart
         const last7Days = @json($last7Days);
@@ -485,16 +495,7 @@
         const themeToggle = document.getElementById('theme-toggle');
         const htmlElement = document.documentElement;
         
-        if (themeToggle) {
-          // Get saved theme or default to light
-          const currentTheme = localStorage.getItem('theme') || 'light';
-          htmlElement.classList.toggle('dark', currentTheme === 'dark');
-          
-          themeToggle.addEventListener('click', () => {
-            const isDark = htmlElement.classList.toggle('dark');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-          });
-        }
+       
       });
     </script>
   </body>

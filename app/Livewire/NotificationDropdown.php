@@ -8,90 +8,80 @@ use Illuminate\Support\Facades\Auth;
 
 class NotificationDropdown extends Component
 {
-    public $notifications = [];
-    public $unreadCount = 0;
-    public $showDropdown = false;
-    public $showOnlyUnread = false;
+    public bool $open = false;
+    public bool $showOnlyUnread = false;
 
-    // Remove the echo listener - just keep the manual trigger
     protected $listeners = [
-        'notificationCreated' => 'loadNotifications',
+        'refreshNotifications' => '$refresh',
     ];
 
-    public function mount()
-    {
-        $this->loadNotifications();
-    }
-
-    public function loadNotifications()
+    public function getNotificationsProperty()
     {
         $query = Notification::where('user_id', Auth::id())
-                            ->orderBy('created_at', 'desc');
+            ->latest()
+            ->limit(20);
 
         if ($this->showOnlyUnread) {
             $query->unread();
         }
 
-        $this->notifications = $query->take(20)->get();
-        $this->unreadCount = Notification::where('user_id', Auth::id())
-                                       ->unread()
-                                       ->count();
+        return $query->get();
     }
 
-    public function toggleDropdown()
+    public function getUnreadCountProperty()
     {
-        $this->showDropdown = !$this->showDropdown;
-        
-        if ($this->showDropdown) {
-            $this->loadNotifications();
-        }
+        return Notification::where('user_id', Auth::id())
+            ->unread()
+            ->count();
     }
 
-    public function markAsRead($notificationId)
+    public function toggle()
     {
-        $notification = Notification::find($notificationId);
-        
-        if ($notification && $notification->user_id === Auth::id()) {
-            $notification->markAsRead();
-            $this->loadNotifications();
-        }
+        $this->open = !$this->open;
     }
 
-    public function markAllAsRead()
+    public function close()
     {
-        Notification::where('user_id', Auth::id())
-                   ->unread()
-                   ->update([
-                       'is_read' => true,
-                       'read_at' => now(),
-                   ]);
-        
-        $this->loadNotifications();
-    }
-
-    public function deleteNotification($notificationId)
-    {
-        $notification = Notification::find($notificationId);
-        
-        if ($notification && $notification->user_id === Auth::id()) {
-            $notification->delete();
-            $this->loadNotifications();
-        }
-    }
-
-    public function deleteAllRead()
-    {
-        Notification::where('user_id', Auth::id())
-                   ->read()
-                   ->delete();
-        
-        $this->loadNotifications();
+        $this->open = false;
     }
 
     public function toggleFilter()
     {
         $this->showOnlyUnread = !$this->showOnlyUnread;
-        $this->loadNotifications();
+    }
+
+    public function markAsRead($id)
+    {
+        Notification::where('id', $id)
+            ->where('user_id', Auth::id())
+            ->update([
+                'is_read' => true,
+                'read_at' => now(),
+            ]);
+    }
+
+    public function markAllAsRead()
+    {
+        Notification::where('user_id', Auth::id())
+            ->unread()
+            ->update([
+                'is_read' => true,
+                'read_at' => now(),
+            ]);
+    }
+
+    public function deleteNotification($id)
+    {
+        Notification::where('id', $id)
+            ->where('user_id', Auth::id())
+            ->delete();
+    }
+
+    public function deleteAllRead()
+    {
+        Notification::where('user_id', Auth::id())
+            ->read()
+            ->delete();
     }
 
     public function render()

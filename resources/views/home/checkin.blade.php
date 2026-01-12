@@ -96,6 +96,7 @@
         border-radius: 1rem;
       }
     </style>
+    
   </head>
   <body
     class="bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 font-display flex h-screen overflow-hidden"
