@@ -109,6 +109,7 @@
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       }
     </style>
+    @livewireStyles
   </head>
   <body
     class="bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 font-display flex h-screen overflow-hidden"
@@ -309,6 +310,7 @@
       </main>
     </div>
 
+    @livewireScripts
     <script>
       // Mobile Menu & Profile Dropdown
       const menuToggle = document.getElementById("menu-toggle");

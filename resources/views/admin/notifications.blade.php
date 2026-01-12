@@ -82,6 +82,7 @@
         }
       }
     </style>
+    @livewireStyles
   </head>
   <body class="bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 font-display flex h-screen overflow-hidden">
     <!-- Sidebar -->
@@ -424,7 +425,7 @@
         </div>
       </main>
     </div>
-
+@livewireScripts
     <script>
       // Mobile Menu & Profile Dropdown
       const menuToggle = document.getElementById("menu-toggle");

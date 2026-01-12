@@ -13,21 +13,24 @@ class Attendance extends Model
     protected $fillable = [
         'user_id',
         'attendance_date',
-        'check_in',
-        'check_out',
+        'morning_check_in',
+        'morning_check_out',
+        'afternoon_check_in',
+        'afternoon_check_out',
         'longitude',
         'latitude',
         'status',
         'work_hours',
         'absent_note',
         'note',
-        'office_location_id',
     ];
 
     protected $casts = [
         'attendance_date' => 'date',
-        'check_in' => 'datetime',
-        'check_out' => 'datetime',
+        'morning_check_in' => 'datetime',
+        'morning_check_out' => 'datetime',
+        'afternoon_check_in' => 'datetime',
+        'afternoon_check_out' => 'datetime',
         'work_hours' => 'decimal:2',
     ];
 
@@ -37,29 +40,63 @@ class Attendance extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function officeLocation()
-    {
-        return $this->belongsTo(OfficeLocation::class);
-    }
-
     /**
-     * Calculate work hours with decimal precision (includes minutes)
+     * Calculate total work hours from both morning and afternoon sessions
      * Stores total hours as decimal (e.g., 8.5 hours = 8 hours 30 minutes)
      */
     public function calculateWorkHours()
     {
-        if ($this->check_in && $this->check_out) {
-            $checkIn = Carbon::parse($this->check_in);
-            $checkOut = Carbon::parse($this->check_out);
-            
-            // Calculate total minutes worked
-            $totalMinutes = $checkOut->diffInMinutes($checkIn);
-            
-            // Convert to decimal hours (e.g., 510 minutes = 8.5 hours)
-            $this->work_hours = round($totalMinutes / 60, 2);
-            
-            $this->save();
+        $totalMinutes = 0;
+
+        // Calculate morning session hours
+        if ($this->morning_check_in && $this->morning_check_out) {
+            $morningIn = Carbon::parse($this->morning_check_in);
+            $morningOut = Carbon::parse($this->morning_check_out);
+            $totalMinutes += $morningOut->diffInMinutes($morningIn);
         }
+
+        // Calculate afternoon session hours
+        if ($this->afternoon_check_in && $this->afternoon_check_out) {
+            $afternoonIn = Carbon::parse($this->afternoon_check_in);
+            $afternoonOut = Carbon::parse($this->afternoon_check_out);
+            $totalMinutes += $afternoonOut->diffInMinutes($afternoonIn);
+        }
+
+        // Convert to decimal hours (e.g., 510 minutes = 8.5 hours)
+        $this->work_hours = round($totalMinutes / 60, 2);
+        $this->save();
+    }
+
+    /**
+     * Get morning session hours only
+     */
+    public function getMorningWorkHoursAttribute()
+    {
+        if (!$this->morning_check_in || !$this->morning_check_out) {
+            return 0;
+        }
+
+        $morningIn = Carbon::parse($this->morning_check_in);
+        $morningOut = Carbon::parse($this->morning_check_out);
+        $totalMinutes = $morningOut->diffInMinutes($morningIn);
+
+        return round($totalMinutes / 60, 2);
+    }
+
+    /**
+     * Get afternoon session hours only
+     */
+    public function getAfternoonWorkHoursAttribute()
+    {
+        if (!$this->afternoon_check_in || !$this->afternoon_check_out) {
+            return 0;
+        }
+
+        $afternoonIn = Carbon::parse($this->afternoon_check_in);
+        $afternoonOut = Carbon::parse($this->afternoon_check_out);
+        $totalMinutes = $afternoonOut->diffInMinutes($afternoonIn);
+
+        return round($totalMinutes / 60, 2);
     }
 
     /**
@@ -80,6 +117,48 @@ class Attendance extends Model
         }
 
         return "{$hours}h";
+    }
+
+    /**
+     * Get formatted morning session hours
+     */
+    public function getFormattedMorningHoursAttribute()
+    {
+        $hours = $this->morning_work_hours;
+        if (!$hours) {
+            return '—';
+        }
+
+        $totalMinutes = $hours * 60;
+        $h = floor($totalMinutes / 60);
+        $m = $totalMinutes % 60;
+
+        if ($m > 0) {
+            return "{$h}h {$m}m";
+        }
+
+        return "{$h}h";
+    }
+
+    /**
+     * Get formatted afternoon session hours
+     */
+    public function getFormattedAfternoonHoursAttribute()
+    {
+        $hours = $this->afternoon_work_hours;
+        if (!$hours) {
+            return '—';
+        }
+
+        $totalMinutes = $hours * 60;
+        $h = floor($totalMinutes / 60);
+        $m = $totalMinutes % 60;
+
+        if ($m > 0) {
+            return "{$h}h {$m}m";
+        }
+
+        return "{$h}h";
     }
 
     /**
@@ -134,22 +213,108 @@ class Attendance extends Model
         return implode(' ', $parts);
     }
 
-    // Check if late
-    public function isLate()
+    /**
+     * Check if late for morning session
+     */
+    public function isLateMorning()
     {
         $schedule = AttendanceSchedule::where('user_id', $this->user_id)
                                       ->where('is_active', true)
                                       ->first();
         
-        if (!$schedule || !$this->check_in) {
+        if (!$schedule || !$this->morning_check_in) {
             return false;
         }
 
-        $checkInTime = Carbon::parse($this->check_in);
-        $scheduledTime = Carbon::parse($this->attendance_date->format('Y-m-d') . ' ' . $schedule->scheduled_check_in);
+        $checkInTime = Carbon::parse($this->morning_check_in);
+        $scheduledTime = Carbon::parse($this->attendance_date->format('Y-m-d') . ' ' . $schedule->scheduled_check_in_morining);
         $lateThreshold = $scheduledTime->addMinutes($schedule->late_allowed_min);
 
         return $checkInTime->gt($lateThreshold);
+    }
+
+    /**
+     * Check if late for afternoon session
+     */
+    public function isLateAfternoon()
+    {
+        $schedule = AttendanceSchedule::where('user_id', $this->user_id)
+                                      ->where('is_active', true)
+                                      ->first();
+        
+        if (!$schedule || !$this->afternoon_check_in) {
+            return false;
+        }
+
+        $checkInTime = Carbon::parse($this->afternoon_check_in);
+        $scheduledTime = Carbon::parse($this->attendance_date->format('Y-m-d') . ' ' . $schedule->scheduled_check_in_afternoon);
+        $lateThreshold = $scheduledTime->addMinutes($schedule->late_allowed_min);
+
+        return $checkInTime->gt($lateThreshold);
+    }
+
+    /**
+     * Check if late for any session
+     */
+    public function isLate()
+    {
+        return $this->isLateMorning() || $this->isLateAfternoon();
+    }
+
+    /**
+     * Check if user checked in for morning session
+     */
+    public function hasMorningCheckIn()
+    {
+        return !is_null($this->morning_check_in);
+    }
+
+    /**
+     * Check if user checked out for morning session
+     */
+    public function hasMorningCheckOut()
+    {
+        return !is_null($this->morning_check_out);
+    }
+
+    /**
+     * Check if user checked in for afternoon session
+     */
+    public function hasAfternoonCheckIn()
+    {
+        return !is_null($this->afternoon_check_in);
+    }
+
+    /**
+     * Check if user checked out for afternoon session
+     */
+    public function hasAfternoonCheckOut()
+    {
+        return !is_null($this->afternoon_check_out);
+    }
+
+    /**
+     * Check if morning session is complete
+     */
+    public function isMorningSessionComplete()
+    {
+        return $this->hasMorningCheckIn() && $this->hasMorningCheckOut();
+    }
+
+    /**
+     * Check if afternoon session is complete
+     */
+    public function isAfternoonSessionComplete()
+    {
+        return $this->hasAfternoonCheckIn() && $this->hasAfternoonCheckOut();
+    }
+
+    /**
+     * Check if full day is complete
+     */
+    public function isFullDayComplete()
+    {
+        return $this->isMorningSessionComplete() && $this->isAfternoonSessionComplete();
     }
 
     // Scopes
@@ -167,5 +332,23 @@ class Attendance extends Model
     public function scopeForUser($query, $userId)
     {
         return $query->where('user_id', $userId);
+    }
+
+    public function scopeComplete($query)
+    {
+        return $query->whereNotNull('morning_check_in')
+                    ->whereNotNull('morning_check_out')
+                    ->whereNotNull('afternoon_check_in')
+                    ->whereNotNull('afternoon_check_out');
+    }
+
+    public function scopeIncomplete($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('morning_check_in')
+              ->orWhereNull('morning_check_out')
+              ->orWhereNull('afternoon_check_in')
+              ->orWhereNull('afternoon_check_out');
+        });
     }
 }

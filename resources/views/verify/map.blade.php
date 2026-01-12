@@ -114,6 +114,77 @@
           <p class="text-base text-gray-600 dark:text-gray-400 max-w-md mx-auto">Make sure you're within the allowed area to complete your attendance</p>
         </div>
 
+        <!-- Current Session Info -->
+        @php
+            $currentHour = now()->format('H:i:s');
+            $isMorningTime = $currentHour >= '07:00:00' && $currentHour < '12:00:00';
+            $isAfternoonTime = $currentHour >= '13:00:00' && $currentHour < '18:00:00';
+            
+            $suggestedSession = $isMorningTime ? 'morning' : ($isAfternoonTime ? 'afternoon' : 'morning');
+            $sessionIcon = $suggestedSession === 'morning' ? 'wb_sunny' : 'wb_twilight';
+            $sessionColor = $suggestedSession === 'morning' ? 'yellow' : 'orange';
+        @endphp
+
+        <!-- Session Selector -->
+        <div class="bg-surface-light dark:bg-surface-dark rounded-2xl border border-gray-100 dark:border-gray-800 p-6 mb-6 shadow-lg">
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">schedule</span>
+            Select Session
+          </h3>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Morning Session -->
+            <label class="relative cursor-pointer">
+              <input type="radio" name="session" value="morning" 
+                     class="peer sr-only" 
+                     {{ $suggestedSession === 'morning' ? 'checked' : '' }}
+                     onchange="updateSessionUI('morning')">
+              <div class="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl transition-all peer-checked:border-yellow-500 peer-checked:bg-yellow-50 dark:peer-checked:bg-yellow-900/20 hover:border-yellow-300">
+                <div class="flex items-center gap-3 mb-2">
+                  <span class="material-symbols-outlined text-2xl text-yellow-600 dark:text-yellow-400">wb_sunny</span>
+                  <span class="font-bold text-gray-900 dark:text-white">Morning Session</span>
+                </div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">07:30 AM - 11:30 AM</p>
+                @if($todayAttendance && $todayAttendance->morning_check_in)
+                  <div class="mt-2 flex items-center gap-1 text-xs">
+                    <span class="text-green-600 dark:text-green-400">✓ Checked In: {{ $todayAttendance->morning_check_in->format('h:i A') }}</span>
+                  </div>
+                @endif
+                @if($todayAttendance && $todayAttendance->morning_check_out)
+                  <div class="mt-1 flex items-center gap-1 text-xs">
+                    <span class="text-blue-600 dark:text-blue-400">✓ Checked Out: {{ $todayAttendance->morning_check_out->format('h:i A') }}</span>
+                  </div>
+                @endif
+              </div>
+            </label>
+
+            <!-- Afternoon Session -->
+            <label class="relative cursor-pointer">
+              <input type="radio" name="session" value="afternoon" 
+                     class="peer sr-only"
+                     {{ $suggestedSession === 'afternoon' ? 'checked' : '' }}
+                     onchange="updateSessionUI('afternoon')">
+              <div class="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl transition-all peer-checked:border-orange-500 peer-checked:bg-orange-50 dark:peer-checked:bg-orange-900/20 hover:border-orange-300">
+                <div class="flex items-center gap-3 mb-2">
+                  <span class="material-symbols-outlined text-2xl text-orange-600 dark:text-orange-400">wb_twilight</span>
+                  <span class="font-bold text-gray-900 dark:text-white">Afternoon Session</span>
+                </div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">02:00 PM - 05:30 PM</p>
+                @if($todayAttendance && $todayAttendance->afternoon_check_in)
+                  <div class="mt-2 flex items-center gap-1 text-xs">
+                    <span class="text-green-600 dark:text-green-400">✓ Checked In: {{ $todayAttendance->afternoon_check_in->format('h:i A') }}</span>
+                  </div>
+                @endif
+                @if($todayAttendance && $todayAttendance->afternoon_check_out)
+                  <div class="mt-1 flex items-center gap-1 text-xs">
+                    <span class="text-blue-600 dark:text-blue-400">✓ Checked Out: {{ $todayAttendance->afternoon_check_out->format('h:i A') }}</span>
+                  </div>
+                @endif
+              </div>
+            </label>
+          </div>
+        </div>
+
         <!-- Map Card -->
         <div class="bg-surface-light dark:bg-surface-dark rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-xl mb-6">
           <div class="p-6 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-primary/5 to-blue-600/5">
@@ -230,6 +301,7 @@
           <input type="hidden" name="latitude" id="latitude">
           <input type="hidden" name="longitude" id="longitude">
           <input type="hidden" name="action" id="action">
+          <input type="hidden" name="session" id="session-input" value="{{ $suggestedSession }}">
 
           <div class="bg-surface-light dark:bg-surface-dark rounded-2xl border border-gray-100 dark:border-gray-800 p-6 mb-6 shadow-lg">
             <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
@@ -247,37 +319,39 @@
 
           <!-- Action Buttons -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="action-buttons">
-            @if(!$todayAttendance || !$todayAttendance->check_in)
-              <button
-                type="button"
-                onclick="performCheckIn()"
-                id="checkin-btn"
-                disabled
-                class="group relative px-8 py-5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-all shadow-lg hover:shadow-xl disabled:shadow-none flex items-center justify-center gap-3 text-lg overflow-hidden"
-              >
-                <div class="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-                <span class="material-symbols-outlined text-3xl relative z-10">login</span>
-                <span class="relative z-10">Check In</span>
-              </button>
-            @endif
+            @php
+                $canCheckInMorning = !$todayAttendance || !$todayAttendance->morning_check_in;
+                $canCheckOutMorning = $todayAttendance && $todayAttendance->morning_check_in && !$todayAttendance->morning_check_out;
+                $canCheckInAfternoon = !$todayAttendance || !$todayAttendance->afternoon_check_in;
+                $canCheckOutAfternoon = $todayAttendance && $todayAttendance->afternoon_check_in && !$todayAttendance->afternoon_check_out;
+            @endphp
 
-            @if($todayAttendance && $todayAttendance->check_in && !$todayAttendance->check_out)
-              <button
-                type="button"
-                onclick="performCheckOut()"
-                id="checkout-btn"
-                disabled
-                class="group relative px-8 py-5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-all shadow-lg hover:shadow-xl disabled:shadow-none flex items-center justify-center gap-3 text-lg overflow-hidden"
-              >
-                <div class="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-                <span class="material-symbols-outlined text-3xl relative z-10">logout</span>
-                <span class="relative z-10">Check Out</span>
-              </button>
-            @endif
+            <button
+              type="button"
+              onclick="performCheckIn()"
+              id="checkin-btn"
+              disabled
+              class="group relative px-8 py-5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-all shadow-lg hover:shadow-xl disabled:shadow-none flex items-center justify-center gap-3 text-lg overflow-hidden"
+            >
+              <div class="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+              <span class="material-symbols-outlined text-3xl relative z-10">login</span>
+              <span class="relative z-10" id="checkin-btn-text">Check In</span>
+            </button>
 
-            
-            <a  href="{{ route('checkin') }}"
-              class="px-8 py-5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-bold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-3 text-lg"
+            <button
+              type="button"
+              onclick="performCheckOut()"
+              id="checkout-btn"
+              disabled
+              class="group relative px-8 py-5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-all shadow-lg hover:shadow-xl disabled:shadow-none flex items-center justify-center gap-3 text-lg overflow-hidden"
+            >
+              <div class="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+              <span class="material-symbols-outlined text-3xl relative z-10">logout</span>
+              <span class="relative z-10" id="checkout-btn-text">Check Out</span>
+            </button>
+
+            <a href="{{ route('checkin') }}"
+              class="px-8 py-5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-bold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-3 text-lg sm:col-span-2"
             >
               <span class="material-symbols-outlined text-3xl">arrow_back</span>
               <span>Back</span>
@@ -304,7 +378,15 @@
       const ALLOWED_RADIUS = {{ $officeLocation->radius ?? 20 }};
       const OFFICE_NAME = "{{ $officeLocation->name ?? 'Office' }}";
 
+      // Session availability from backend
+      const CAN_CHECKIN_MORNING = {{ $canCheckInMorning ? 'true' : 'false' }};
+      const CAN_CHECKOUT_MORNING = {{ $canCheckOutMorning ? 'true' : 'false' }};
+      const CAN_CHECKIN_AFTERNOON = {{ $canCheckInAfternoon ? 'true' : 'false' }};
+      const CAN_CHECKOUT_AFTERNOON = {{ $canCheckOutAfternoon ? 'true' : 'false' }};
+
       let map, marker, circle, userLat, userLng;
+      let currentSession = '{{ $suggestedSession }}';
+      let locationVerified = false;
 
       // Initialize map
       function initMap() {
@@ -345,6 +427,38 @@
 
         // Get user location
         getUserLocation();
+        
+        // Update UI for initial session
+        updateSessionUI(currentSession);
+      }
+
+      function updateSessionUI(session) {
+        currentSession = session;
+        document.getElementById('session-input').value = session;
+        
+        const checkinBtn = document.getElementById('checkin-btn');
+        const checkoutBtn = document.getElementById('checkout-btn');
+        const checkinText = document.getElementById('checkin-btn-text');
+        const checkoutText = document.getElementById('checkout-btn-text');
+        
+        if (session === 'morning') {
+          checkinText.textContent = '🌞 Morning Check In';
+          checkoutText.textContent = '🌞 Morning Check Out';
+          
+          // Update button states based on session availability
+          if (locationVerified) {
+            checkinBtn.disabled = !CAN_CHECKIN_MORNING;
+            checkoutBtn.disabled = !CAN_CHECKOUT_MORNING;
+          }
+        } else {
+          checkinText.textContent = '🌅 Afternoon Check In';
+          checkoutText.textContent = '🌅 Afternoon Check Out';
+          
+          if (locationVerified) {
+            checkinBtn.disabled = !CAN_CHECKIN_AFTERNOON;
+            checkoutBtn.disabled = !CAN_CHECKOUT_AFTERNOON;
+          }
+        }
       }
 
       function getUserLocation() {
@@ -451,24 +565,32 @@
         document.getElementById('location-loading').classList.add('hidden');
 
         if (distance <= ALLOWED_RADIUS) {
+          locationVerified = true;
           document.getElementById('location-success').classList.remove('hidden');
           document.getElementById('distance-text').textContent = `Distance: ${Math.round(distance)}m from office`;
           
-          // Enable buttons
-          const checkinBtn = document.getElementById('checkin-btn');
-          const checkoutBtn = document.getElementById('checkout-btn');
-          if (checkinBtn) checkinBtn.disabled = false;
-          if (checkoutBtn) checkoutBtn.disabled = false;
+          // Update button states based on current session
+          updateSessionUI(currentSession);
         } else {
+          locationVerified = false;
           document.getElementById('location-outside').classList.remove('hidden');
           document.getElementById('distance-outside-text').textContent = `You are ${Math.round(distance)}m away (${Math.round(distance - ALLOWED_RADIUS)}m outside allowed area)`;
+          
+          // Disable both buttons
+          document.getElementById('checkin-btn').disabled = true;
+          document.getElementById('checkout-btn').disabled = true;
         }
       }
 
       function showError(message) {
+        locationVerified = false;
         document.getElementById('location-loading').classList.add('hidden');
         document.getElementById('location-error').classList.remove('hidden');
         document.getElementById('error-message').textContent = message;
+        
+        // Disable both buttons
+        document.getElementById('checkin-btn').disabled = true;
+        document.getElementById('checkout-btn').disabled = true;
       }
 
       function performCheckIn() {

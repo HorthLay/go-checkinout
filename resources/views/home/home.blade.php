@@ -53,7 +53,7 @@
     </script>
     <style>
       body {
-        font-family: "Inter", sans-serif;
+        font-family: "Inter", sans-serif";
       }
       .no-scrollbar::-webkit-scrollbar {
         display: none;
@@ -82,6 +82,7 @@
         }
       }
     </style>
+    @livewireStyles
   </head>
   <body
     class="bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 font-display flex h-screen overflow-hidden"
@@ -109,7 +110,7 @@
       @include('home.Layouts.mobile')
 
       <!-- Main Content -->
-      <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10">
+      <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:px-10">
         <!-- Stats Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
           <!-- Total Present -->
@@ -165,18 +166,59 @@
                 <p class="text-xs text-gray-500 dark:text-gray-400">Your current working hours</p>
               </div>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
-              <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 md:p-4">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Check-In Time</p>
-                <p class="text-base md:text-lg font-bold text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($schedule->scheduled_check_in)->format('h:i A') }}</p>
+            
+            <!-- Morning and Afternoon Sessions -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+              <!-- Morning Session -->
+              <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="material-symbols-outlined text-yellow-600 dark:text-yellow-400">wb_sunny</span>
+                  <h4 class="text-sm font-bold text-gray-900 dark:text-white">Morning Session</h4>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Check-In</p>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                      {{ \Carbon\Carbon::parse($schedule->scheduled_check_in_morining)->format('h:i A') }}
+                    </p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Check-Out</p>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                      {{ \Carbon\Carbon::parse($schedule->scheduled_check_out_morining)->format('h:i A') }}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 md:p-4">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Check-Out Time</p>
-                <p class="text-base md:text-lg font-bold text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($schedule->scheduled_check_out)->format('h:i A') }}</p>
+
+              <!-- Afternoon Session -->
+              <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="material-symbols-outlined text-orange-600 dark:text-orange-400">wb_twilight</span>
+                  <h4 class="text-sm font-bold text-gray-900 dark:text-white">Afternoon Session</h4>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Check-In</p>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                      {{ \Carbon\Carbon::parse($schedule->scheduled_check_in_afternoon)->format('h:i A') }}
+                    </p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Check-Out</p>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                      {{ \Carbon\Carbon::parse($schedule->scheduled_check_out_afternoon)->format('h:i A') }}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 md:p-4">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Late Tolerance</p>
-                <p class="text-base md:text-lg font-bold text-gray-900 dark:text-white">{{ $schedule->late_allowed_min }} min</p>
+            </div>
+
+            <!-- Late Tolerance -->
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-gray-500 dark:text-gray-400">Late Tolerance</span>
+                <span class="text-sm font-bold text-gray-900 dark:text-white">{{ $schedule->late_allowed_min }} minutes</span>
               </div>
             </div>
           </div>
@@ -204,26 +246,73 @@
                 {{ ucfirst(str_replace('_', ' ', $todayAttendance->status)) }}
               </span>
             </div>
-            <div class="grid grid-cols-3 gap-3 md:gap-4">
-              <div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Check-In</p>
-                <p class="text-sm md:text-base font-semibold text-gray-900 dark:text-white truncate">
-                  {{ $todayAttendance->check_in ? $todayAttendance->check_in->format('h:i A') : '—' }}
-                </p>
+            
+            <!-- Morning and Afternoon Sessions -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <!-- Morning Session -->
+              <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="material-symbols-outlined text-yellow-600 dark:text-yellow-400 text-lg">wb_sunny</span>
+                  <h4 class="text-sm font-bold text-gray-900 dark:text-white">Morning</h4>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">In</p>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                      {{ $todayAttendance->morning_check_in ? $todayAttendance->morning_check_in->format('h:i A') : '—' }}
+                    </p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Out</p>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                      {{ $todayAttendance->morning_check_out ? $todayAttendance->morning_check_out->format('h:i A') : '—' }}
+                    </p>
+                  </div>
+                </div>
+                <div class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Hours: <span class="font-semibold text-gray-900 dark:text-white">{{ $todayAttendance->formatted_morning_hours }}</span></p>
+                </div>
               </div>
-              <div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Check-Out</p>
-                <p class="text-sm md:text-base font-semibold text-gray-900 dark:text-white truncate">
-                  {{ $todayAttendance->check_out ? $todayAttendance->check_out->format('h:i A') : '—' }}
-                </p>
-              </div>
-              <div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Hours</p>
-                <p class="text-sm md:text-base font-semibold text-gray-900 dark:text-white truncate">
-                  {{ $todayAttendance->formatted_work_hours ?? '—' }}
-                </p>
+
+              <!-- Afternoon Session -->
+              <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="material-symbols-outlined text-orange-600 dark:text-orange-400 text-lg">wb_twilight</span>
+                  <h4 class="text-sm font-bold text-gray-900 dark:text-white">Afternoon</h4>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">In</p>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                      {{ $todayAttendance->afternoon_check_in ? $todayAttendance->afternoon_check_in->format('h:i A') : '—' }}
+                    </p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Out</p>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                      {{ $todayAttendance->afternoon_check_out ? $todayAttendance->afternoon_check_out->format('h:i A') : '—' }}
+                    </p>
+                  </div>
+                </div>
+                <div class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Hours: <span class="font-semibold text-gray-900 dark:text-white">{{ $todayAttendance->formatted_afternoon_hours }}</span></p>
+                </div>
               </div>
             </div>
+
+            <!-- Total Hours -->
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">timer</span>
+                  <span class="text-sm font-semibold text-blue-900 dark:text-blue-100">Total Work Hours</span>
+                </div>
+                <span class="text-lg font-bold text-blue-600 dark:text-blue-400">
+                  {{ $todayAttendance->formatted_work_hours ?? '—' }}
+                </span>
+              </div>
+            </div>
+
             @if($todayAttendance->note)
               <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Note</p>
@@ -292,8 +381,8 @@
               <thead class="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
                 <tr>
                   <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
-                  <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Check-In</th>
-                  <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Check-Out</th>
+                  <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Morning</th>
+                  <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Afternoon</th>
                   <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hours</th>
                   <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                 </tr>
@@ -308,13 +397,28 @@
                       <p class="text-xs text-gray-500 dark:text-gray-400">{{ $attendance->attendance_date->format('l') }}</p>
                     </td>
                     <td class="py-4 px-6">
-                      <p class="text-sm text-gray-900 dark:text-white">{{ $attendance->check_in ? $attendance->check_in->format('h:i A') : '—' }}</p>
+                      <div class="text-xs space-y-1">
+                        <p class="text-gray-900 dark:text-white">
+                          <span class="text-gray-500">In:</span> {{ $attendance->morning_check_in ? $attendance->morning_check_in->format('h:i A') : '—' }}
+                        </p>
+                        <p class="text-gray-900 dark:text-white">
+                          <span class="text-gray-500">Out:</span> {{ $attendance->morning_check_out ? $attendance->morning_check_out->format('h:i A') : '—' }}
+                        </p>
+                      </div>
                     </td>
                     <td class="py-4 px-6">
-                      <p class="text-sm text-gray-900 dark:text-white">{{ $attendance->check_out ? $attendance->check_out->format('h:i A') : '—' }}</p>
+                      <div class="text-xs space-y-1">
+                        <p class="text-gray-900 dark:text-white">
+                          <span class="text-gray-500">In:</span> {{ $attendance->afternoon_check_in ? $attendance->afternoon_check_in->format('h:i A') : '—' }}
+                        </p>
+                        <p class="text-gray-900 dark:text-white">
+                          <span class="text-gray-500">Out:</span> {{ $attendance->afternoon_check_out ? $attendance->afternoon_check_out->format('h:i A') : '—' }}
+                        </p>
+                      </div>
                     </td>
                     <td class="py-4 px-6">
-                      <p class="text-sm text-gray-900 dark:text-white">{{ $attendance->formatted_work_hours ?? '—' }}</p>
+                      <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $attendance->formatted_work_hours ?? '—' }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">M: {{ $attendance->formatted_morning_hours }} | A: {{ $attendance->formatted_afternoon_hours }}</p>
                     </td>
                     <td class="py-4 px-6">
                       <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium
@@ -361,19 +465,34 @@
                     {{ ucfirst(str_replace('_', ' ', $attendance->status)) }}
                   </span>
                 </div>
-                <div class="grid grid-cols-3 gap-3">
-                  <div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Check-In</p>
-                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ $attendance->check_in ? $attendance->check_in->format('h:i A') : '—' }}</p>
+                
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                  <!-- Morning -->
+                  <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-2">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1.5 flex items-center gap-1">
+                      <span class="material-symbols-outlined text-sm">wb_sunny</span>
+                      Morning
+                    </p>
+                    <p class="text-xs text-gray-900 dark:text-white mb-0.5">In: {{ $attendance->morning_check_in ? $attendance->morning_check_in->format('h:i A') : '—' }}</p>
+                    <p class="text-xs text-gray-900 dark:text-white">Out: {{ $attendance->morning_check_out ? $attendance->morning_check_out->format('h:i A') : '—' }}</p>
                   </div>
-                  <div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Check-Out</p>
-                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ $attendance->check_out ? $attendance->check_out->format('h:i A') : '—' }}</p>
+
+                  <!-- Afternoon -->
+                  <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-2">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1.5 flex items-center gap-1">
+                      <span class="material-symbols-outlined text-sm">wb_twilight</span>
+                      Afternoon
+                    </p>
+                    <p class="text-xs text-gray-900 dark:text-white mb-0.5">In: {{ $attendance->afternoon_check_in ? $attendance->afternoon_check_in->format('h:i A') : '—' }}</p>
+                    <p class="text-xs text-gray-900 dark:text-white">Out: {{ $attendance->afternoon_check_out ? $attendance->afternoon_check_out->format('h:i A') : '—' }}</p>
                   </div>
-                  <div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Hours</p>
-                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ $attendance->formatted_work_hours ?? '—' }}</p>
-                  </div>
+                </div>
+
+                <!-- Total Hours -->
+                <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Hours</p>
+                  <p class="text-sm font-bold text-gray-900 dark:text-white">{{ $attendance->formatted_work_hours ?? '—' }}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">M: {{ $attendance->formatted_morning_hours }} | A: {{ $attendance->formatted_afternoon_hours }}</p>
                 </div>
               </div>
             @empty
@@ -433,7 +552,7 @@
         </div>
       </main>
     </div>
-
+@livewireScripts
     <script>
       // Mobile Menu & Profile Dropdown
       const menuToggle = document.getElementById("menu-toggle");

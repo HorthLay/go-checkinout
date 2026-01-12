@@ -225,21 +225,46 @@
 
                 @if($user->attendanceSchedule)
                   <div class="space-y-2 mb-3">
-                    <div class="flex items-center justify-between text-sm">
-                      <span class="text-gray-600 dark:text-gray-400">Check-In:</span>
-                      <span class="font-medium text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_in)->format('h:i A') }}</span>
+                    <!-- Morning Session -->
+                    <div class="border-b border-gray-100 dark:border-gray-800 pb-2">
+                      <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-base">wb_sunny</span>
+                        MORNING SESSION
+                      </p>
+                      <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-600 dark:text-gray-400">In:</span>
+                        <span class="font-medium text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_in_morining)->format('h:i A') }}</span>
+                      </div>
+                      <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-600 dark:text-gray-400">Out:</span>
+                        <span class="font-medium text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_out_morining)->format('h:i A') }}</span>
+                      </div>
                     </div>
-                    <div class="flex items-center justify-between text-sm">
-                      <span class="text-gray-600 dark:text-gray-400">Check-Out:</span>
-                      <span class="font-medium text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_out)->format('h:i A') }}</span>
+                    
+                    <!-- Afternoon Session -->
+                    <div class="border-b border-gray-100 dark:border-gray-800 pb-2">
+                      <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-base">wb_twilight</span>
+                        AFTERNOON SESSION
+                      </p>
+                      <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-600 dark:text-gray-400">In:</span>
+                        <span class="font-medium text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_in_afternoon)->format('h:i A') }}</span>
+                      </div>
+                      <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-600 dark:text-gray-400">Out:</span>
+                        <span class="font-medium text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_out_afternoon)->format('h:i A') }}</span>
+                      </div>
                     </div>
+                    
+                    <!-- Late Tolerance -->
                     <div class="flex items-center justify-between text-sm">
                       <span class="text-gray-600 dark:text-gray-400">Late Tolerance:</span>
                       <span class="font-medium text-gray-900 dark:text-white">{{ $user->attendanceSchedule->late_allowed_min }} mins</span>
                     </div>
                   </div>
                   <button 
-                    onclick="editSchedule({{ $user->id }}, '{{ $user->name }}', '{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_in)->format('H:i') }}', '{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_out)->format('H:i') }}', {{ $user->attendanceSchedule->late_allowed_min }})"
+                    onclick="editSchedule({{ $user->id }}, '{{ $user->name }}', '{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_in_morining)->format('H:i') }}', '{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_out_morining)->format('H:i') }}', '{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_in_afternoon)->format('H:i') }}', '{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_out_afternoon)->format('H:i') }}', {{ $user->attendanceSchedule->late_allowed_min }})"
                     class="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                   >
                     <span class="material-symbols-outlined text-lg">edit</span>
@@ -250,7 +275,7 @@
                     <p class="text-xs text-gray-500 dark:text-gray-400">No schedule set</p>
                   </div>
                   <button 
-                    onclick="editSchedule({{ $user->id }}, '{{ $user->name }}', '09:00', '17:00', 10)"
+                    onclick="editSchedule({{ $user->id }}, '{{ $user->name }}', '07:30', '11:30', '14:00', '17:30', 10)"
                     class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-medium transition-colors"
                   >
                     <span class="material-symbols-outlined text-lg">add</span>
@@ -479,8 +504,8 @@
                   <tr>
                     <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Employee</th>
                     <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
-                    <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Check-In</th>
-                    <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Check-Out</th>
+                    <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Morning</th>
+                    <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Afternoon</th>
                     <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hours</th>
                     <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                   </tr>
@@ -509,13 +534,38 @@
                         <p class="text-xs text-gray-500 dark:text-gray-400">{{ $attendance->attendance_date->format('l') }}</p>
                       </td>
                       <td class="py-4 px-6">
-                        <p class="text-sm text-gray-900 dark:text-white">{{ $attendance->check_in ? $attendance->check_in->format('h:i A') : '—' }}</p>
+                        <div class="space-y-0.5">
+                          <p class="text-xs text-gray-500 dark:text-gray-400">In: 
+                            <span class="text-gray-900 dark:text-white font-medium">
+                              {{ $attendance->morning_check_in ? $attendance->morning_check_in->format('h:i A') : '—' }}
+                            </span>
+                          </p>
+                          <p class="text-xs text-gray-500 dark:text-gray-400">Out: 
+                            <span class="text-gray-900 dark:text-white font-medium">
+                              {{ $attendance->morning_check_out ? $attendance->morning_check_out->format('h:i A') : '—' }}
+                            </span>
+                          </p>
+                        </div>
                       </td>
                       <td class="py-4 px-6">
-                        <p class="text-sm text-gray-900 dark:text-white">{{ $attendance->check_out ? $attendance->check_out->format('h:i A') : '—' }}</p>
+                        <div class="space-y-0.5">
+                          <p class="text-xs text-gray-500 dark:text-gray-400">In: 
+                            <span class="text-gray-900 dark:text-white font-medium">
+                              {{ $attendance->afternoon_check_in ? $attendance->afternoon_check_in->format('h:i A') : '—' }}
+                            </span>
+                          </p>
+                          <p class="text-xs text-gray-500 dark:text-gray-400">Out: 
+                            <span class="text-gray-900 dark:text-white font-medium">
+                              {{ $attendance->afternoon_check_out ? $attendance->afternoon_check_out->format('h:i A') : '—' }}
+                            </span>
+                          </p>
+                        </div>
                       </td>
                       <td class="py-4 px-6">
-                        <p class="text-sm text-gray-900 dark:text-white">{{ $attendance->formatted_work_hours}}</p>
+                        <p class="text-sm text-gray-900 dark:text-white font-medium">{{ $attendance->formatted_work_hours }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                          M: {{ $attendance->formatted_morning_hours }} | A: {{ $attendance->formatted_afternoon_hours }}
+                        </p>
                       </td>
                       <td class="py-4 px-6">
                         <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium
@@ -691,14 +741,44 @@
             </div>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Check-In Time</label>
-            <input type="time" name="scheduled_check_in" id="schedule_check_in" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary/20 focus:border-primary">
+          <!-- Morning Session -->
+          <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-blue-50/50 dark:bg-blue-900/10">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+              <span class="material-symbols-outlined text-lg">wb_sunny</span>
+              Morning Session
+            </h4>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Check-In</label>
+                <input type="time" name="scheduled_check_in_morning" id="schedule_check_in_morning" required 
+                       class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Check-Out</label>
+                <input type="time" name="scheduled_check_out_morning" id="schedule_check_out_morning" required 
+                       class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Check-Out Time</label>
-            <input type="time" name="scheduled_check_out" id="schedule_check_out" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary/20 focus:border-primary">
+          <!-- Afternoon Session -->
+          <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-orange-50/50 dark:bg-orange-900/10">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+              <span class="material-symbols-outlined text-lg">wb_twilight</span>
+              Afternoon Session
+            </h4>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Check-In</label>
+                <input type="time" name="scheduled_check_in_afternoon" id="schedule_check_in_afternoon" required 
+                       class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Check-Out</label>
+                <input type="time" name="scheduled_check_out_afternoon" id="schedule_check_out_afternoon" required 
+                       class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+              </div>
+            </div>
           </div>
 
           <div>
@@ -912,8 +992,10 @@
       // Schedule Modal Functions
       function openScheduleModal() {
         document.getElementById('scheduleModalTitle').textContent = 'Set Work Schedule';
-        document.getElementById('schedule_check_in').value = '09:00';
-        document.getElementById('schedule_check_out').value = '17:00';
+        document.getElementById('schedule_check_in_morning').value = '07:30';
+        document.getElementById('schedule_check_out_morning').value = '11:30';
+        document.getElementById('schedule_check_in_afternoon').value = '14:00';
+        document.getElementById('schedule_check_out_afternoon').value = '17:30';
         document.getElementById('schedule_late_min').value = '10';
         clearScheduleSelection();
         document.getElementById('schedule_employee_search').value = '';
@@ -922,11 +1004,13 @@
         document.body.style.overflow = 'hidden';
       }
 
-      function editSchedule(userId, userName, checkIn, checkOut, lateMins) {
+      function editSchedule(userId, userName, morningIn, morningOut, afternoonIn, afternoonOut, lateMins) {
         document.getElementById('scheduleModalTitle').textContent = `Update Schedule - ${userName}`;
         document.getElementById('schedule_user_id_hidden').value = userId;
-        document.getElementById('schedule_check_in').value = checkIn;
-        document.getElementById('schedule_check_out').value = checkOut;
+        document.getElementById('schedule_check_in_morning').value = morningIn;
+        document.getElementById('schedule_check_out_morning').value = morningOut;
+        document.getElementById('schedule_check_in_afternoon').value = afternoonIn;
+        document.getElementById('schedule_check_out_afternoon').value = afternoonOut;
         document.getElementById('schedule_late_min').value = lateMins;
         
         const options = document.querySelectorAll('.employee-option');

@@ -51,6 +51,7 @@
         },
       };
     </script>
+    @livewireStyles
     <style>
       body {
         font-family: "Inter", sans-serif;
@@ -376,6 +377,8 @@
       </main>
     </div>
 
+
+    @livewireScripts
     <script>
       // Mobile Menu & Profile Dropdown
       const menuToggle = document.getElementById("menu-toggle");

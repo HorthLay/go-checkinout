@@ -82,6 +82,7 @@
         }
       }
     </style>
+    @livewireStyles
   </head>
   <body
     class="bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 font-display flex h-screen overflow-hidden"
@@ -126,27 +127,94 @@
 
           <div class="p-6">
             @if($schedule)
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
-                  <div class="flex items-center gap-3 mb-3">
-                    <div class="size-10 rounded-lg bg-green-600 dark:bg-green-500 flex items-center justify-center">
-                      <span class="material-symbols-outlined text-white text-xl">login</span>
+              <!-- Morning Session -->
+              <div class="mb-6">
+                <div class="flex items-center gap-2 mb-4">
+                  <span class="material-symbols-outlined text-yellow-600 dark:text-yellow-400">wb_sunny</span>
+                  <h3 class="text-lg font-bold text-gray-900 dark:text-white">Morning Session</h3>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
+                    <div class="flex items-center gap-3 mb-3">
+                      <div class="size-10 rounded-lg bg-green-600 dark:bg-green-500 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-white text-xl">login</span>
+                      </div>
+                      <p class="text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wider">Check-In</p>
                     </div>
-                    <p class="text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wider">Check-In Time</p>
+                    <p class="text-3xl font-bold text-green-900 dark:text-green-100">{{ \Carbon\Carbon::parse($schedule->scheduled_check_in_morining)->format('h:i A') }}</p>
                   </div>
-                  <p class="text-3xl font-bold text-green-900 dark:text-green-100">{{ \Carbon\Carbon::parse($schedule->scheduled_check_in)->format('h:i A') }}</p>
+
+                  <div class="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+                    <div class="flex items-center gap-3 mb-3">
+                      <div class="size-10 rounded-lg bg-red-600 dark:bg-red-500 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-white text-xl">logout</span>
+                      </div>
+                      <p class="text-xs font-semibold text-red-700 dark:text-red-300 uppercase tracking-wider">Check-Out</p>
+                    </div>
+                    <p class="text-3xl font-bold text-red-900 dark:text-red-100">{{ \Carbon\Carbon::parse($schedule->scheduled_check_out_morining)->format('h:i A') }}</p>
+                  </div>
                 </div>
 
-                <div class="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
-                  <div class="flex items-center gap-3 mb-3">
-                    <div class="size-10 rounded-lg bg-red-600 dark:bg-red-500 flex items-center justify-center">
-                      <span class="material-symbols-outlined text-white text-xl">logout</span>
-                    </div>
-                    <p class="text-xs font-semibold text-red-700 dark:text-red-300 uppercase tracking-wider">Check-Out Time</p>
+                @php
+                  $morningIn = \Carbon\Carbon::parse($schedule->scheduled_check_in_morining);
+                  $morningOut = \Carbon\Carbon::parse($schedule->scheduled_check_out_morining);
+                  $morningHours = $morningOut->diffInHours($morningIn);
+                  $morningMinutes = $morningOut->diffInMinutes($morningIn) % 60;
+                @endphp
+
+                <div class="mt-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3">
+                  <div class="flex items-center justify-between">
+                    <p class="text-sm text-blue-700 dark:text-blue-300">Expected Work Hours</p>
+                    <p class="text-lg font-bold text-blue-900 dark:text-blue-100">{{ $morningHours }}h {{ $morningMinutes }}m</p>
                   </div>
-                  <p class="text-3xl font-bold text-red-900 dark:text-red-100">{{ \Carbon\Carbon::parse($schedule->scheduled_check_out)->format('h:i A') }}</p>
+                </div>
+              </div>
+
+              <!-- Afternoon Session -->
+              <div class="mb-6">
+                <div class="flex items-center gap-2 mb-4">
+                  <span class="material-symbols-outlined text-orange-600 dark:text-orange-400">wb_twilight</span>
+                  <h3 class="text-lg font-bold text-gray-900 dark:text-white">Afternoon Session</h3>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
+                    <div class="flex items-center gap-3 mb-3">
+                      <div class="size-10 rounded-lg bg-green-600 dark:bg-green-500 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-white text-xl">login</span>
+                      </div>
+                      <p class="text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wider">Check-In</p>
+                    </div>
+                    <p class="text-3xl font-bold text-green-900 dark:text-green-100">{{ \Carbon\Carbon::parse($schedule->scheduled_check_in_afternoon)->format('h:i A') }}</p>
+                  </div>
+
+                  <div class="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+                    <div class="flex items-center gap-3 mb-3">
+                      <div class="size-10 rounded-lg bg-red-600 dark:bg-red-500 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-white text-xl">logout</span>
+                      </div>
+                      <p class="text-xs font-semibold text-red-700 dark:text-red-300 uppercase tracking-wider">Check-Out</p>
+                    </div>
+                    <p class="text-3xl font-bold text-red-900 dark:text-red-100">{{ \Carbon\Carbon::parse($schedule->scheduled_check_out_afternoon)->format('h:i A') }}</p>
+                  </div>
                 </div>
 
+                @php
+                  $afternoonIn = \Carbon\Carbon::parse($schedule->scheduled_check_in_afternoon);
+                  $afternoonOut = \Carbon\Carbon::parse($schedule->scheduled_check_out_afternoon);
+                  $afternoonHours = $afternoonOut->diffInHours($afternoonIn);
+                  $afternoonMinutes = $afternoonOut->diffInMinutes($afternoonIn) % 60;
+                @endphp
+
+                <div class="mt-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3">
+                  <div class="flex items-center justify-between">
+                    <p class="text-sm text-blue-700 dark:text-blue-300">Expected Work Hours</p>
+                    <p class="text-lg font-bold text-blue-900 dark:text-blue-100">{{ $afternoonHours }}h {{ $afternoonMinutes }}m</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Late Tolerance -->
+              <div class="mb-6">
                 <div class="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border border-orange-200 dark:border-orange-800 rounded-xl p-4">
                   <div class="flex items-center gap-3 mb-3">
                     <div class="size-10 rounded-lg bg-orange-600 dark:bg-orange-500 flex items-center justify-center">
@@ -159,33 +227,38 @@
               </div>
 
               <!-- Schedule Info Card -->
-              <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+              <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-4">
                 <div class="flex items-start gap-3">
                   <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 mt-0.5">info</span>
                   <div class="flex-1">
-                    <p class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">Schedule Information</p>
-                    <p class="text-sm text-blue-700 dark:text-blue-300">
-                      Your scheduled work time is from <strong>{{ \Carbon\Carbon::parse($schedule->scheduled_check_in)->format('h:i A') }}</strong> to <strong>{{ \Carbon\Carbon::parse($schedule->scheduled_check_out)->format('h:i A') }}</strong>.
-                    </p>
-                    <p class="text-sm text-blue-700 dark:text-blue-300 mt-2">
-                      You have <strong>{{ $schedule->late_allowed_min }} minutes</strong> grace period. Arriving after <strong>{{ \Carbon\Carbon::parse($schedule->scheduled_check_in)->addMinutes($schedule->late_allowed_min)->format('h:i A') }}</strong> will be marked as late.
-                    </p>
+                    <p class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">Schedule Information</p>
+                    <div class="space-y-2 text-sm text-blue-700 dark:text-blue-300">
+                      <p>
+                        <strong>Morning:</strong> {{ \Carbon\Carbon::parse($schedule->scheduled_check_in_morining)->format('h:i A') }} to {{ \Carbon\Carbon::parse($schedule->scheduled_check_out_morining)->format('h:i A') }}
+                      </p>
+                      <p>
+                        <strong>Afternoon:</strong> {{ \Carbon\Carbon::parse($schedule->scheduled_check_in_afternoon)->format('h:i A') }} to {{ \Carbon\Carbon::parse($schedule->scheduled_check_out_afternoon)->format('h:i A') }}
+                      </p>
+                      <p class="pt-2 border-t border-blue-200 dark:border-blue-800">
+                        You have <strong>{{ $schedule->late_allowed_min }} minutes</strong> grace period. Arriving after the scheduled time plus grace period will be marked as late.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
 
               <!-- Working Hours Calculation -->
               @php
-                $checkIn = \Carbon\Carbon::parse($schedule->scheduled_check_in);
-                $checkOut = \Carbon\Carbon::parse($schedule->scheduled_check_out);
-                $workHours = $checkOut->diffInHours($checkIn);
-                $workMinutes = $checkOut->diffInMinutes($checkIn) % 60;
+                $totalMinutes = $morningOut->diffInMinutes($morningIn) + $afternoonOut->diffInMinutes($afternoonIn);
+                $totalHours = floor($totalMinutes / 60);
+                $totalMins = $totalMinutes % 60;
               @endphp
 
-              <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
-                  <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Expected Work Hours</p>
-                  <p class="text-xl font-bold text-gray-900 dark:text-white">{{ $workHours }}h {{ $workMinutes }}m</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Daily Work Hours</p>
+                  <p class="text-xl font-bold text-gray-900 dark:text-white">{{ $totalHours }}h {{ $totalMins }}m</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Morning: {{ $morningHours }}h {{ $morningMinutes }}m + Afternoon: {{ $afternoonHours }}h {{ $afternoonMinutes }}m</p>
                 </div>
                 <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
                   <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Schedule Status</p>
@@ -320,7 +393,7 @@
         </div>
       </main>
     </div>
-
+@livewireScripts
     <script>
       // Mobile Menu & Profile Dropdown
       const menuToggle = document.getElementById("menu-toggle");

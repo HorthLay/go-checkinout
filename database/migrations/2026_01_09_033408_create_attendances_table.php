@@ -16,8 +16,11 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
 
             $table->date('attendance_date');
-            $table->dateTime('check_in')->nullable();
-            $table->dateTime('check_out')->nullable();
+             $table->dateTime('morning_check_in')->nullable();
+            $table->dateTime('morning_check_out')->nullable();
+
+            $table->dateTime('afternoon_check_in')->nullable();     
+            $table->dateTime('afternoon_check_out')->nullable();
 
             $table->decimal('longitude', 10, 7)->nullable();
             $table->decimal('latitude', 10, 7)->nullable();

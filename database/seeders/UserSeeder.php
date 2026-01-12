@@ -16,7 +16,7 @@ class UserSeeder extends Seeder
     {
         // Super Admin
         User::create([
-            'name' => 'User',
+            'name' => 'admin',
             'email' => '',
             'email_verified_at' => now(),
             'telegram_id' => null,

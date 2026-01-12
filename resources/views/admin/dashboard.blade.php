@@ -293,16 +293,29 @@
             <div class="divide-y divide-gray-100 dark:divide-gray-800 max-h-96 overflow-y-auto">
               @forelse($recentAttendance as $attendance)
                 <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                  <div class="flex items-center gap-3">
+                  <div class="flex items-start gap-3">
                     <div class="size-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold shrink-0">
                       {{ substr($attendance->user->name, 0, 1) }}
                     </div>
                     <div class="flex-1 min-w-0">
                       <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ $attendance->user->name }}</p>
-                      <p class="text-xs text-gray-500 dark:text-gray-400">{{ $attendance->officeLocation->name ?? 'Unknown' }}</p>
+                      <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        @if($attendance->morning_check_in)
+                          <span class="flex items-center gap-1">
+                            <span class="material-symbols-outlined text-xs">wb_sunny</span>
+                            {{ $attendance->morning_check_in->format('h:i A') }}
+                          </span>
+                        @endif
+                        @if($attendance->afternoon_check_in)
+                          <span class="flex items-center gap-1">
+                            <span class="material-symbols-outlined text-xs">wb_twilight</span>
+                            {{ $attendance->afternoon_check_in->format('h:i A') }}
+                          </span>
+                        @endif
+                      </div>
                     </div>
                     <div class="text-right">
-                      <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $attendance->check_in->format('h:i A') }}</p>
+                      <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $attendance->formatted_work_hours }}</p>
                       <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
                         {{ $attendance->status === 'on_time' ? 'bg-green-50 text-green-600' : '' }}
                         {{ $attendance->status === 'late' ? 'bg-orange-50 text-orange-600' : '' }}
@@ -337,9 +350,21 @@
           </div>
 
           <div class="p-6">
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
               <div class="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ $todaySummary['total_checked_in'] }}</p>
+                <div class="flex items-center justify-center gap-1 mb-2">
+                  <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-lg">wb_sunny</span>
+                  <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">Morning</p>
+                </div>
+                <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ $todaySummary['morning_checked_in'] }}</p>
+                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Checked In</p>
+              </div>
+              <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
+                <div class="flex items-center justify-center gap-1 mb-2">
+                  <span class="material-symbols-outlined text-orange-600 dark:text-orange-400 text-lg">wb_twilight</span>
+                  <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">Afternoon</p>
+                </div>
+                <p class="text-2xl font-bold text-orange-600 dark:text-orange-400">{{ $todaySummary['afternoon_checked_in'] }}</p>
                 <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Checked In</p>
               </div>
               <div class="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
@@ -351,8 +376,8 @@
                 <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Late</p>
               </div>
               <div class="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
-                <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ $todaySummary['total_checked_out'] }}</p>
-                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Checked Out</p>
+                <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ $todaySummary['complete_days'] }}</p>
+                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Full Day</p>
               </div>
               <div class="text-center p-4 bg-gray-50 dark:bg-gray-900/20 rounded-xl">
                 <p class="text-2xl font-bold text-gray-600 dark:text-gray-400">{{ $todaySummary['pending'] }}</p>

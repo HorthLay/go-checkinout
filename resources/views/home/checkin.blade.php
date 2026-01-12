@@ -96,6 +96,8 @@
         border-radius: 1rem;
       }
     </style>
+
+    @livewireStyles
     
   </head>
   <body
@@ -164,25 +166,79 @@
                 </span>
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
-                  <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Check-In</p>
-                  <p class="text-lg font-bold text-gray-900 dark:text-white">
-                    {{ $todayAttendance->check_in ? $todayAttendance->check_in->format('h:i A') : '—' }}
-                  </p>
+              <!-- Morning and Afternoon Sessions -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <!-- Morning Session -->
+                <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+                  <div class="flex items-center gap-2 mb-3">
+                    <span class="material-symbols-outlined text-yellow-600 dark:text-yellow-400">wb_sunny</span>
+                    <h4 class="text-sm font-bold text-gray-900 dark:text-white">Morning Session</h4>
+                  </div>
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs text-gray-500 dark:text-gray-400">Check-In:</span>
+                      <span class="text-sm font-semibold text-gray-900 dark:text-white">
+                        {{ $todayAttendance->morning_check_in ? $todayAttendance->morning_check_in->format('h:i A') : '—' }}
+                      </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs text-gray-500 dark:text-gray-400">Check-Out:</span>
+                      <span class="text-sm font-semibold text-gray-900 dark:text-white">
+                        {{ $todayAttendance->morning_check_out ? $todayAttendance->morning_check_out->format('h:i A') : '—' }}
+                      </span>
+                    </div>
+                    <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+                      <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-500 dark:text-gray-400">Hours:</span>
+                        <span class="text-sm font-bold text-blue-600 dark:text-blue-400">
+                          {{ $todayAttendance->formatted_morning_hours }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
-                  <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Check-Out</p>
-                  <p class="text-lg font-bold text-gray-900 dark:text-white">
-                    {{ $todayAttendance->check_out ? $todayAttendance->check_out->format('h:i A') : '—' }}
-                  </p>
-                </div>
-                <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
-                  <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Work Hours</p>
-                  <p class="text-lg font-bold text-gray-900 dark:text-white">
-                  {{ $todayAttendance->formatted_work_hours ?? '—' }}
 
-                  </p>
+                <!-- Afternoon Session -->
+                <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+                  <div class="flex items-center gap-2 mb-3">
+                    <span class="material-symbols-outlined text-orange-600 dark:text-orange-400">wb_twilight</span>
+                    <h4 class="text-sm font-bold text-gray-900 dark:text-white">Afternoon Session</h4>
+                  </div>
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs text-gray-500 dark:text-gray-400">Check-In:</span>
+                      <span class="text-sm font-semibold text-gray-900 dark:text-white">
+                        {{ $todayAttendance->afternoon_check_in ? $todayAttendance->afternoon_check_in->format('h:i A') : '—' }}
+                      </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs text-gray-500 dark:text-gray-400">Check-Out:</span>
+                      <span class="text-sm font-semibold text-gray-900 dark:text-white">
+                        {{ $todayAttendance->afternoon_check_out ? $todayAttendance->afternoon_check_out->format('h:i A') : '—' }}
+                      </span>
+                    </div>
+                    <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+                      <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-500 dark:text-gray-400">Hours:</span>
+                        <span class="text-sm font-bold text-blue-600 dark:text-blue-400">
+                          {{ $todayAttendance->formatted_afternoon_hours }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Total Work Hours -->
+              <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">timer</span>
+                    <span class="text-sm font-semibold text-blue-900 dark:text-blue-100">Total Work Hours</span>
+                  </div>
+                  <span class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {{ $todayAttendance->formatted_work_hours ?? '—' }}
+                  </span>
                 </div>
               </div>
             </div>
@@ -198,7 +254,7 @@
                   <li>Scan the QR code at your workplace entrance</li>
                   <li>You will be redirected to location verification</li>
                   <li>Confirm your location is within the allowed area</li>
-                  <li>Complete your check-in or check-out</li>
+                  <li>Complete your check-in or check-out for morning or afternoon session</li>
                 </ol>
               </div>
             </div>
@@ -256,7 +312,7 @@
         </div>
       </main>
     </div>
-
+@livewireScripts
     <script>
       // Mobile Menu & Profile Dropdown
       const menuToggle = document.getElementById("menu-toggle");

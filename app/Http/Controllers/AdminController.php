@@ -15,125 +15,122 @@ class AdminController extends Controller
 
 
   public function index()
-{
-    // Get current month date range
-    $startOfMonth = now()->startOfMonth();
-    $endOfMonth = now()->endOfMonth();
-    
-    // Overall Statistics
-    $stats = [
-        'total_employees' => User::where('role_type', 'user')->count(),
-        'total_present_today' => Attendance::whereDate('attendance_date', today())
-                                          ->whereIn('status', ['on_time', 'late'])
-                                          ->count(),
-        'total_late_today' => Attendance::whereDate('attendance_date', today())
-                                       ->where('status', 'late')
-                                       ->count(),
-        'total_absent_today' => Attendance::whereDate('attendance_date', today())
-                                         ->where('status', 'absent')
-                                         ->count(),
-        'total_hours_month' => Attendance::whereBetween('attendance_date', [$startOfMonth, $endOfMonth])
-                                        ->sum('work_hours'),
-        'avg_hours_month' => Attendance::whereBetween('attendance_date', [$startOfMonth, $endOfMonth])
-                                      ->avg('work_hours'),
-    ];
-    
-    // Top 5 Performers (This Month)
-    $topPerformers = User::where('role_type', 'user')
-                        ->withSum(['attendances as total_hours' => function($query) use ($startOfMonth, $endOfMonth) {
-                            $query->whereBetween('attendance_date', [$startOfMonth, $endOfMonth]);
-                        }], 'work_hours')
-                        ->withCount(['attendances as present_days' => function($query) use ($startOfMonth, $endOfMonth) {
-                            $query->whereBetween('attendance_date', [$startOfMonth, $endOfMonth])
-                                  ->whereIn('status', ['on_time', 'late']);
-                        }])
-                        ->withCount(['attendances as late_days' => function($query) use ($startOfMonth, $endOfMonth) {
-                            $query->whereBetween('attendance_date', [$startOfMonth, $endOfMonth])
-                                  ->where('status', 'late');
-                        }])
-                        ->having('total_hours', '>', 0)
-                        ->orderByDesc('total_hours')
-                        ->take(5)
-                        ->get();
-    
-    // Recent Attendance (Last 10 check-ins)
-    $recentAttendance = Attendance::with(['user', 'officeLocation'])
-                                 ->whereNotNull('check_in')
-                                 ->orderBy('check_in', 'desc')
-                                 ->take(10)
-                                 ->get();
-    
-    // Daily Attendance for Last 7 Days (for chart)
-    $last7Days = collect();
-    for ($i = 6; $i >= 0; $i--) {
-        $date = now()->subDays($i);
-        $dayAttendances = Attendance::whereDate('attendance_date', $date)->get();
+    {
+        // Get current month date range
+        $startOfMonth = now()->startOfMonth();
+        $endOfMonth = now()->endOfMonth();
         
-        $last7Days->push([
-            'date' => $date->format('D'),
-            'full_date' => $date->format('M d'),
-            'present' => $dayAttendances->whereIn('status', ['on_time', 'late'])->count(),
-            'late' => $dayAttendances->where('status', 'late')->count(),
-            'absent' => $dayAttendances->where('status', 'absent')->count(),
-            'leave' => $dayAttendances->where('status', 'leave')->count(),
-        ]);
+        // Overall Statistics
+        $stats = [
+            'total_employees' => User::where('role_type', 'user')->count(),
+            'total_present_today' => Attendance::whereDate('attendance_date', today())
+                                              ->whereIn('status', ['on_time', 'late'])
+                                              ->count(),
+            'total_late_today' => Attendance::whereDate('attendance_date', today())
+                                           ->where('status', 'late')
+                                           ->count(),
+            'total_absent_today' => Attendance::whereDate('attendance_date', today())
+                                             ->where('status', 'absent')
+                                             ->count(),
+            'total_hours_month' => Attendance::whereBetween('attendance_date', [$startOfMonth, $endOfMonth])
+                                            ->sum('work_hours'),
+            'avg_hours_month' => Attendance::whereBetween('attendance_date', [$startOfMonth, $endOfMonth])
+                                          ->avg('work_hours'),
+        ];
+        
+        // Top 5 Performers (This Month)
+        $topPerformers = User::where('role_type', 'user')
+                            ->withSum(['attendances as total_hours' => function($query) use ($startOfMonth, $endOfMonth) {
+                                $query->whereBetween('attendance_date', [$startOfMonth, $endOfMonth]);
+                            }], 'work_hours')
+                            ->withCount(['attendances as present_days' => function($query) use ($startOfMonth, $endOfMonth) {
+                                $query->whereBetween('attendance_date', [$startOfMonth, $endOfMonth])
+                                      ->whereIn('status', ['on_time', 'late']);
+                            }])
+                            ->withCount(['attendances as late_days' => function($query) use ($startOfMonth, $endOfMonth) {
+                                $query->whereBetween('attendance_date', [$startOfMonth, $endOfMonth])
+                                      ->where('status', 'late');
+                            }])
+                            ->having('total_hours', '>', 0)
+                            ->orderByDesc('total_hours')
+                            ->take(5)
+                            ->get();
+        
+        // Recent Attendance (Last 10 with any check-in)
+        $recentAttendance = Attendance::with(['user'])
+                                     ->where(function($query) {
+                                         $query->whereNotNull('morning_check_in')
+                                               ->orWhereNotNull('afternoon_check_in');
+                                     })
+                                     ->orderBy('created_at', 'desc')
+                                     ->take(10)
+                                     ->get();
+        
+        // Daily Attendance for Last 7 Days (for chart)
+        $last7Days = collect();
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+            $dayAttendances = Attendance::whereDate('attendance_date', $date)->get();
+            
+            $last7Days->push([
+                'date' => $date->format('D'),
+                'full_date' => $date->format('M d'),
+                'present' => $dayAttendances->whereIn('status', ['on_time', 'late'])->count(),
+                'late' => $dayAttendances->where('status', 'late')->count(),
+                'absent' => $dayAttendances->where('status', 'absent')->count(),
+                'leave' => $dayAttendances->where('status', 'leave')->count(),
+            ]);
+        }
+        
+        // Status Distribution (This Month)
+        $statusDistribution = [
+            'on_time' => Attendance::whereBetween('attendance_date', [$startOfMonth, $endOfMonth])
+                                  ->where('status', 'on_time')
+                                  ->count(),
+            'late' => Attendance::whereBetween('attendance_date', [$startOfMonth, $endOfMonth])
+                               ->where('status', 'late')
+                               ->count(),
+            'absent' => Attendance::whereBetween('attendance_date', [$startOfMonth, $endOfMonth])
+                                 ->where('status', 'absent')
+                                 ->count(),
+            'leave' => Attendance::whereBetween('attendance_date', [$startOfMonth, $endOfMonth])
+                                ->where('status', 'leave')
+                                ->count(),
+        ];
+        
+        // Office Location Usage
+        $locationStats = OfficeLocation::withCount(['attendances' => function($query) use ($startOfMonth, $endOfMonth) {
+                                          $query->whereBetween('attendance_date', [$startOfMonth, $endOfMonth]);
+                                      }])
+                                      ->having('attendances_count', '>', 0)
+                                      ->orderByDesc('attendances_count')
+                                      ->get();
+        
+        // Today's Summary with Morning/Afternoon breakdown
+        $todayAttendances = Attendance::whereDate('attendance_date', today())->get();
+        
+        $todaySummary = [
+            'morning_checked_in' => $todayAttendances->whereNotNull('morning_check_in')->count(),
+            'afternoon_checked_in' => $todayAttendances->whereNotNull('afternoon_check_in')->count(),
+            'on_time' => $todayAttendances->where('status', 'on_time')->count(),
+            'late' => $todayAttendances->where('status', 'late')->count(),
+            'complete_days' => $todayAttendances->filter(function($attendance) {
+                return $attendance->isFullDayComplete();
+            })->count(),
+            'pending' => User::where('role_type', 'user')->count() - 
+                        $todayAttendances->whereNotNull('morning_check_in')->count(),
+        ];
+        
+        return view('admin.dashboard', compact(
+            'stats',
+            'topPerformers',
+            'recentAttendance',
+            'last7Days',
+            'statusDistribution',
+            'locationStats',
+            'todaySummary'
+        ));
     }
-    
-    // Status Distribution (This Month)
-    $statusDistribution = [
-        'on_time' => Attendance::whereBetween('attendance_date', [$startOfMonth, $endOfMonth])
-                              ->where('status', 'on_time')
-                              ->count(),
-        'late' => Attendance::whereBetween('attendance_date', [$startOfMonth, $endOfMonth])
-                           ->where('status', 'late')
-                           ->count(),
-        'absent' => Attendance::whereBetween('attendance_date', [$startOfMonth, $endOfMonth])
-                             ->where('status', 'absent')
-                             ->count(),
-        'leave' => Attendance::whereBetween('attendance_date', [$startOfMonth, $endOfMonth])
-                            ->where('status', 'leave')
-                            ->count(),
-    ];
-    
-    // Office Location Usage
-    $locationStats = OfficeLocation::withCount(['attendances' => function($query) use ($startOfMonth, $endOfMonth) {
-                                      $query->whereBetween('attendance_date', [$startOfMonth, $endOfMonth]);
-                                  }])
-                                  ->having('attendances_count', '>', 0)
-                                  ->orderByDesc('attendances_count')
-                                  ->get();
-    
-    // Today's Summary
-    $todaySummary = [
-        'total_checked_in' => Attendance::whereDate('attendance_date', today())
-                                       ->whereNotNull('check_in')
-                                       ->count(),
-        'total_checked_out' => Attendance::whereDate('attendance_date', today())
-                                        ->whereNotNull('check_out')
-                                        ->count(),
-        'on_time' => Attendance::whereDate('attendance_date', today())
-                              ->where('status', 'on_time')
-                              ->count(),
-        'late' => Attendance::whereDate('attendance_date', today())
-                           ->where('status', 'late')
-                           ->count(),
-        'pending' => User::where('role_type', 'user')->count() - 
-                    Attendance::whereDate('attendance_date', today())
-                              ->whereNotNull('check_in')
-                              ->count(),
-    ];
-    
-    return view('admin.dashboard', compact(
-        'stats',
-        'topPerformers',
-        'recentAttendance',
-        'last7Days',
-        'statusDistribution',
-        'locationStats',
-        'todaySummary'
-    ));
-}
-
 
   public function qrmake(){
     return view("admin.qrmake");
@@ -242,131 +239,130 @@ class AdminController extends Controller
                        ->with('success', 'Location deleted successfully!');
     }
 
-
-public function report(Request $request)
-{
-    // Get filter parameters
-    $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
-    $endDate = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
-    $userId = $request->input('user_id');
-    
-    // Build query for attendances
-    $query = Attendance::with(['user', 'officeLocation'])
-                      ->whereBetween('attendance_date', [$startDate, $endDate]);
-    
-    if ($userId) {
-        $query->where('user_id', $userId);
-    }
-    
-    $attendances = $query->get();
-    
-    // Calculate statistics
-    $stats = [
-        'total_present' => $attendances->whereIn('status', ['on_time', 'late'])->count(),
-        'total_late' => $attendances->where('status', 'late')->count(),
-        'total_absent' => $attendances->where('status', 'absent')->count(),
-        'total_leave' => $attendances->where('status', 'leave')->count(),
-        'total_hours' => $attendances->sum('work_hours'),
-        'avg_hours' => $attendances->avg('work_hours'),
-    ];
-    
-    // Get top 5 users by work hours
-    $topUsers = User::where('role_type', 'user')
-                   ->withSum(['attendances as total_hours' => function($query) use ($startDate, $endDate) {
-                       $query->whereBetween('attendance_date', [$startDate, $endDate]);
-                   }], 'work_hours')
-                   ->withCount(['attendances as total_days' => function($query) use ($startDate, $endDate) {
-                       $query->whereBetween('attendance_date', [$startDate, $endDate])
-                             ->whereIn('status', ['on_time', 'late']);
-                   }])
-                   ->having('total_hours', '>', 0)
-                   ->orderByDesc('total_hours')
-                   ->take(5)
-                   ->get();
-    
-    // Daily attendance summary
-    $dailySummary = $attendances->groupBy(function($item) {
-        return $item->attendance_date->format('Y-m-d');
-    })->map(function($dayAttendances) {
-        return [
-            'date' => $dayAttendances->first()->attendance_date,
-            'present' => $dayAttendances->whereIn('status', ['on_time', 'late'])->count(),
-            'late' => $dayAttendances->where('status', 'late')->count(),
-            'absent' => $dayAttendances->where('status', 'absent')->count(),
-            'leave' => $dayAttendances->where('status', 'leave')->count(),
-            'total_hours' => $dayAttendances->sum('work_hours'),
+ public function report(Request $request)
+    {
+        // Get filter parameters
+        $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
+        $userId = $request->input('user_id');
+        
+        // Build query for attendances
+        $query = Attendance::with(['user'])
+                          ->whereBetween('attendance_date', [$startDate, $endDate]);
+        
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+        
+        $attendances = $query->get();
+        
+        // Calculate statistics
+        $stats = [
+            'total_present' => $attendances->whereIn('status', ['on_time', 'late'])->count(),
+            'total_late' => $attendances->where('status', 'late')->count(),
+            'total_absent' => $attendances->where('status', 'absent')->count(),
+            'total_leave' => $attendances->where('status', 'leave')->count(),
+            'total_hours' => $attendances->sum('work_hours'),
+            'avg_hours' => $attendances->avg('work_hours'),
         ];
-    })->values();
-    
-    // Get all users for filter
-    $users = User::where('role_type', 'user')->orderBy('name')->get();
-    
-    // Get office locations
-    $locations = OfficeLocation::all();
-    
-    return view('admin.report', compact(
-        'attendances',
-        'stats',
-        'topUsers',
-        'dailySummary',
-        'users',
-        'locations',
-        'startDate',
-        'endDate',
-        'userId'
-    ));
-}
-
-public function reportPrint(Request $request)
-{
-    // Get filter parameters
-    $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
-    $endDate = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
-    $userId = $request->input('user_id');
-    
-    // Build query for attendances
-    $query = Attendance::with(['user', 'officeLocation'])
-                      ->whereBetween('attendance_date', [$startDate, $endDate]);
-    
-    if ($userId) {
-        $query->where('user_id', $userId);
+        
+        // Get top 5 users by work hours
+        $topUsers = User::where('role_type', 'user')
+                       ->withSum(['attendances as total_hours' => function($query) use ($startDate, $endDate) {
+                           $query->whereBetween('attendance_date', [$startDate, $endDate]);
+                       }], 'work_hours')
+                       ->withCount(['attendances as total_days' => function($query) use ($startDate, $endDate) {
+                           $query->whereBetween('attendance_date', [$startDate, $endDate])
+                                 ->whereIn('status', ['on_time', 'late']);
+                       }])
+                       ->having('total_hours', '>', 0)
+                       ->orderByDesc('total_hours')
+                       ->take(5)
+                       ->get();
+        
+        // Daily attendance summary
+        $dailySummary = $attendances->groupBy(function($item) {
+            return $item->attendance_date->format('Y-m-d');
+        })->map(function($dayAttendances) {
+            return [
+                'date' => $dayAttendances->first()->attendance_date,
+                'present' => $dayAttendances->whereIn('status', ['on_time', 'late'])->count(),
+                'late' => $dayAttendances->where('status', 'late')->count(),
+                'absent' => $dayAttendances->where('status', 'absent')->count(),
+                'leave' => $dayAttendances->where('status', 'leave')->count(),
+                'total_hours' => $dayAttendances->sum('work_hours'),
+            ];
+        })->values();
+        
+        // Get all users for filter
+        $users = User::where('role_type', 'user')->orderBy('name')->get();
+        
+        // Get office locations
+        $locations = OfficeLocation::all();
+        
+        return view('admin.report', compact(
+            'attendances',
+            'stats',
+            'topUsers',
+            'dailySummary',
+            'users',
+            'locations',
+            'startDate',
+            'endDate',
+            'userId'
+        ));
     }
-    
-    $attendances = $query->orderBy('attendance_date', 'asc')->get();
-    
-    // Calculate statistics
-    $stats = [
-        'total_present' => $attendances->whereIn('status', ['on_time', 'late'])->count(),
-        'total_late' => $attendances->where('status', 'late')->count(),
-        'total_absent' => $attendances->where('status', 'absent')->count(),
-        'total_leave' => $attendances->where('status', 'leave')->count(),
-        'total_hours' => $attendances->sum('work_hours'),
-        'avg_hours' => $attendances->avg('work_hours'),
-    ];
-    
-    // Get top 5 users by work hours
-    $topUsers = User::where('role_type', 'user')
-                   ->withSum(['attendances as total_hours' => function($query) use ($startDate, $endDate) {
-                       $query->whereBetween('attendance_date', [$startDate, $endDate]);
-                   }], 'work_hours')
-                   ->withCount(['attendances as total_days' => function($query) use ($startDate, $endDate) {
-                       $query->whereBetween('attendance_date', [$startDate, $endDate])
-                             ->whereIn('status', ['on_time', 'late']);
-                   }])
-                   ->having('total_hours', '>', 0)
-                   ->orderByDesc('total_hours')
-                   ->take(5)
-                   ->get();
-    
-    return view('admin.report-print', compact(
-        'attendances',
-        'stats',
-        'topUsers',
-        'startDate',
-        'endDate',
-        'userId'
-    ));
-}
+
+    public function reportPrint(Request $request)
+    {
+        // Get filter parameters
+        $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
+        $userId = $request->input('user_id');
+        
+        // Build query for attendances
+        $query = Attendance::with(['user'])
+                          ->whereBetween('attendance_date', [$startDate, $endDate]);
+        
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+        
+        $attendances = $query->orderBy('attendance_date', 'asc')->get();
+        
+        // Calculate statistics
+        $stats = [
+            'total_present' => $attendances->whereIn('status', ['on_time', 'late'])->count(),
+            'total_late' => $attendances->where('status', 'late')->count(),
+            'total_absent' => $attendances->where('status', 'absent')->count(),
+            'total_leave' => $attendances->where('status', 'leave')->count(),
+            'total_hours' => $attendances->sum('work_hours'),
+            'avg_hours' => $attendances->avg('work_hours'),
+        ];
+        
+        // Get top 5 users by work hours
+        $topUsers = User::where('role_type', 'user')
+                       ->withSum(['attendances as total_hours' => function($query) use ($startDate, $endDate) {
+                           $query->whereBetween('attendance_date', [$startDate, $endDate]);
+                       }], 'work_hours')
+                       ->withCount(['attendances as total_days' => function($query) use ($startDate, $endDate) {
+                           $query->whereBetween('attendance_date', [$startDate, $endDate])
+                                 ->whereIn('status', ['on_time', 'late']);
+                       }])
+                       ->having('total_hours', '>', 0)
+                       ->orderByDesc('total_hours')
+                       ->take(5)
+                       ->get();
+        
+        return view('admin.report-print', compact(
+            'attendances',
+            'stats',
+            'topUsers',
+            'startDate',
+            'endDate',
+            'userId'
+        ));
+    }
 
 // notification
 

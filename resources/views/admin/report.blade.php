@@ -126,6 +126,7 @@
         }
       }
     </style>
+    @livewireStyles
   </head>
   <body class="bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 font-display flex h-screen overflow-hidden">
     <!-- Sidebar -->
@@ -401,10 +402,9 @@
                 <tr>
                   <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Employee</th>
                   <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Date</th>
-                  <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Check-In</th>
-                  <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Check-Out</th>
+                  <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Morning</th>
+                  <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Afternoon</th>
                   <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Hours</th>
-                  <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Location</th>
                   <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Status</th>
                 </tr>
               </thead>
@@ -420,16 +420,28 @@
                       <p class="text-xs text-gray-500 dark:text-gray-400">{{ $attendance->attendance_date->format('l') }}</p>
                     </td>
                     <td class="py-4 px-6">
-                      <p class="text-sm text-gray-900 dark:text-white">{{ $attendance->check_in ? $attendance->check_in->format('h:i A') : '—' }}</p>
+                      <div class="text-xs space-y-1">
+                        <p class="text-gray-900 dark:text-white">
+                          <span class="text-gray-500">In:</span> {{ $attendance->morning_check_in ? $attendance->morning_check_in->format('h:i A') : '—' }}
+                        </p>
+                        <p class="text-gray-900 dark:text-white">
+                          <span class="text-gray-500">Out:</span> {{ $attendance->morning_check_out ? $attendance->morning_check_out->format('h:i A') : '—' }}
+                        </p>
+                      </div>
                     </td>
                     <td class="py-4 px-6">
-                      <p class="text-sm text-gray-900 dark:text-white">{{ $attendance->check_out ? $attendance->check_out->format('h:i A') : '—' }}</p>
+                      <div class="text-xs space-y-1">
+                        <p class="text-gray-900 dark:text-white">
+                          <span class="text-gray-500">In:</span> {{ $attendance->afternoon_check_in ? $attendance->afternoon_check_in->format('h:i A') : '—' }}
+                        </p>
+                        <p class="text-gray-900 dark:text-white">
+                          <span class="text-gray-500">Out:</span> {{ $attendance->afternoon_check_out ? $attendance->afternoon_check_out->format('h:i A') : '—' }}
+                        </p>
+                      </div>
                     </td>
                     <td class="py-4 px-6">
-                      <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $attendance->formatted_work_hours ?? '—' }}</p>
-                    </td>
-                    <td class="py-4 px-6">
-                      <p class="text-sm text-gray-900 dark:text-white">{{ $attendance->officeLocation->name ?? 'N/A' }}</p>
+                      <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $attendance->formatted_work_hours ?? '—' }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">M: {{ $attendance->formatted_morning_hours }} | A: {{ $attendance->formatted_afternoon_hours }}</p>
                     </td>
                     <td class="py-4 px-6">
                       <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium
@@ -444,7 +456,7 @@
                   </tr>
                 @empty
                   <tr>
-                    <td colspan="7" class="py-12 text-center">
+                    <td colspan="6" class="py-12 text-center">
                       <div class="flex flex-col items-center gap-3">
                         <span class="material-symbols-outlined text-5xl text-gray-300">search_off</span>
                         <p class="text-gray-500 dark:text-gray-400">No attendance records found</p>
@@ -459,6 +471,7 @@
       </main>
     </div>
 
+    @livewireScripts
     <script>
       // Mobile Menu & Profile Dropdown
       const menuToggle = document.getElementById("menu-toggle");
@@ -549,20 +562,23 @@
         });
       }
 
-      // Export to CSV
+      // Export to CSV with morning/afternoon session data
       function exportToCSV() {
         const attendances = @json($attendances);
         
-        let csv = 'Employee,Email,Date,Check-In,Check-Out,Hours,Location,Status\n';
+        let csv = 'Employee,Email,Date,Morning In,Morning Out,Afternoon In,Afternoon Out,Total Hours,Morning Hours,Afternoon Hours,Status\n';
         
         attendances.forEach(att => {
           csv += `"${att.user.name}",`;
           csv += `"${att.user.email}",`;
           csv += `"${new Date(att.attendance_date.date).toLocaleDateString()}",`;
-          csv += `"${att.check_in ? new Date(att.check_in.date).toLocaleTimeString() : '-'}",`;
-          csv += `"${att.check_out ? new Date(att.check_out.date).toLocaleTimeString() : '-'}",`;
+          csv += `"${att.morning_check_in ? new Date(att.morning_check_in.date).toLocaleTimeString() : '-'}",`;
+          csv += `"${att.morning_check_out ? new Date(att.morning_check_out.date).toLocaleTimeString() : '-'}",`;
+          csv += `"${att.afternoon_check_in ? new Date(att.afternoon_check_in.date).toLocaleTimeString() : '-'}",`;
+          csv += `"${att.afternoon_check_out ? new Date(att.afternoon_check_out.date).toLocaleTimeString() : '-'}",`;
           csv += `"${att.work_hours || '0'}",`;
-          csv += `"${att.office_location ? att.office_location.name : 'N/A'}",`;
+          csv += `"${att.morning_work_hours || '0'}",`;
+          csv += `"${att.afternoon_work_hours || '0'}",`;
           csv += `"${att.status}"\n`;
         });
 

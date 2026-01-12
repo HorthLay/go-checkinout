@@ -34,19 +34,42 @@ public function index(){
     {
         $request->validate([
             'user_id_select' => 'required|exists:users,id',
-            'scheduled_check_in' => 'required',
-            'scheduled_check_out' => 'required',
+            'scheduled_check_in_morning' => 'required',
+            'scheduled_check_out_morning' => 'required',
+            'scheduled_check_in_afternoon' => 'required',
+            'scheduled_check_out_afternoon' => 'required',
             'late_allowed_min' => 'required|integer|min:0|max:60',
         ]);
 
-        $checkIn = Carbon::createFromFormat('H:i', $request->scheduled_check_in)->format('H:i:s');
-        $checkOut = Carbon::createFromFormat('H:i', $request->scheduled_check_out)->format('H:i:s');
+        // Format time inputs to H:i:s
+        $morningIn = Carbon::createFromFormat('H:i', $request->scheduled_check_in_morning)->format('H:i:s');
+        $morningOut = Carbon::createFromFormat('H:i', $request->scheduled_check_out_morning)->format('H:i:s');
+        $afternoonIn = Carbon::createFromFormat('H:i', $request->scheduled_check_in_afternoon)->format('H:i:s');
+        $afternoonOut = Carbon::createFromFormat('H:i', $request->scheduled_check_out_afternoon)->format('H:i:s');
+
+        // Validate time logic
+        if ($morningOut <= $morningIn) {
+            return redirect()->route('attendance', ['tab' => 'schedules'])
+                           ->with('error', 'Morning check-out must be after morning check-in.');
+        }
+
+        if ($afternoonOut <= $afternoonIn) {
+            return redirect()->route('attendance', ['tab' => 'schedules'])
+                           ->with('error', 'Afternoon check-out must be after afternoon check-in.');
+        }
+
+        if ($afternoonIn <= $morningOut) {
+            return redirect()->route('attendance', ['tab' => 'schedules'])
+                           ->with('error', 'Afternoon check-in must be after morning check-out.');
+        }
 
         AttendanceSchedule::updateOrCreate(
             ['user_id' => $request->user_id_select],
             [
-                'scheduled_check_in' => $checkIn,
-                'scheduled_check_out' => $checkOut,
+                'scheduled_check_in_morining' => $morningIn, // Note: keeping typo from schema
+                'scheduled_check_out_morining' => $morningOut,
+                'scheduled_check_in_afternoon' => $afternoonIn,
+                'scheduled_check_out_afternoon' => $afternoonOut,
                 'late_allowed_min' => $request->late_allowed_min,
                 'is_active' => true,
             ]

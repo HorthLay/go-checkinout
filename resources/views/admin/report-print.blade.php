@@ -218,10 +218,9 @@
               <th class="text-left">Employee</th>
             @endif
             <th class="text-center w-20">Date</th>
-            <th class="text-center w-16">Check-In</th>
-            <th class="text-center w-16">Check-Out</th>
-            <th class="text-center w-16">Hours</th>
-            <th class="text-left">Location</th>
+            <th class="text-center w-24">Morning</th>
+            <th class="text-center w-24">Afternoon</th>
+            <th class="text-center w-20">Total Hours</th>
             <th class="text-center w-16">Status</th>
           </tr>
         </thead>
@@ -239,10 +238,21 @@
                 <div>{{ $attendance->attendance_date->format('M d, Y') }}</div>
                 <div class="text-xs text-gray-600">{{ $attendance->attendance_date->format('l') }}</div>
               </td>
-              <td class="text-center">{{ $attendance->check_in ? $attendance->check_in->format('h:i A') : '—' }}</td>
-              <td class="text-center">{{ $attendance->check_out ? $attendance->check_out->format('h:i A') : '—' }}</td>
-              <td class="text-center font-semibold">{{ $attendance->formatted_work_hours ?? '—' }}</td>
-              <td>{{ $attendance->officeLocation->name ?? 'N/A' }}</td>
+              <td class="text-center">
+                <div class="text-xs">
+                  <div>In: {{ $attendance->morning_check_in ? $attendance->morning_check_in->format('h:i A') : '—' }}</div>
+                  <div>Out: {{ $attendance->morning_check_out ? $attendance->morning_check_out->format('h:i A') : '—' }}</div>
+                  <div class="font-semibold text-blue-600">{{ $attendance->formatted_morning_hours }}</div>
+                </div>
+              </td>
+              <td class="text-center">
+                <div class="text-xs">
+                  <div>In: {{ $attendance->afternoon_check_in ? $attendance->afternoon_check_in->format('h:i A') : '—' }}</div>
+                  <div>Out: {{ $attendance->afternoon_check_out ? $attendance->afternoon_check_out->format('h:i A') : '—' }}</div>
+                  <div class="font-semibold text-blue-600">{{ $attendance->formatted_afternoon_hours }}</div>
+                </div>
+              </td>
+              <td class="text-center font-bold">{{ $attendance->formatted_work_hours ?? '—' }}</td>
               <td class="text-center">
                 <span class="font-semibold
                   {{ $attendance->status === 'on_time' ? 'text-green-600' : '' }}
@@ -255,7 +265,7 @@
               </td>
             </tr>
             
-            @if(($index + 1) % 25 === 0 && !$loop->last)
+            @if(($index + 1) % 20 === 0 && !$loop->last)
               </tbody>
             </table>
           </div>
@@ -264,7 +274,7 @@
             <!-- Repeat Header on New Page -->
             <div class="text-center mb-3 border-b-2 border-black pb-2">
               <div class="text-xl font-bold">ATTENDANCE REPORT (Continued)</div>
-              <div class="text-xs">Page {{ floor(($index + 1) / 25) + 1 }}</div>
+              <div class="text-xs">Page {{ floor(($index + 1) / 20) + 1 }}</div>
             </div>
             
             <table class="text-xs mb-3">
@@ -275,10 +285,9 @@
                     <th class="text-left">Employee</th>
                   @endif
                   <th class="text-center w-20">Date</th>
-                  <th class="text-center w-16">Check-In</th>
-                  <th class="text-center w-16">Check-Out</th>
-                  <th class="text-center w-16">Hours</th>
-                  <th class="text-left">Location</th>
+                  <th class="text-center w-24">Morning</th>
+                  <th class="text-center w-24">Afternoon</th>
+                  <th class="text-center w-20">Total Hours</th>
                   <th class="text-center w-16">Status</th>
                 </tr>
               </thead>
@@ -286,7 +295,7 @@
             @endif
           @empty
             <tr>
-              <td colspan="{{ $userId ? '7' : '8' }}" class="text-center py-4">
+              <td colspan="{{ $userId ? '6' : '7' }}" class="text-center py-4">
                 No attendance records found for the selected period.
               </td>
             </tr>
@@ -311,7 +320,8 @@
         <div class="text-xs space-y-1">
           <div>• This report is generated automatically by the Attendify system.</div>
           <div>• All times are based on the system timezone and office location verification.</div>
-          <div>• Work hours are calculated based on actual check-in and check-out times.</div>
+          <div>• Work hours are calculated from morning and afternoon sessions combined.</div>
+          <div>• Morning Session: Typically 07:30 AM - 11:30 AM | Afternoon Session: Typically 02:00 PM - 05:30 PM</div>
           <div>• Status indicators: ON TIME (arrived within grace period), LATE (arrived after grace period), ABSENT (no check-in), LEAVE (scheduled day off).</div>
           <div>• For discrepancies or questions, please contact the HR department.</div>
           <div>• This document is confidential and intended for authorized personnel only.</div>

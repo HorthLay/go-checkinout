@@ -46,10 +46,15 @@ class TelegramService
     /**
      * Send check-in notification
      */
-    public function sendCheckInNotification($user, $attendance, $officeLocation, $schedule = null)
+    public function sendCheckInNotification($user, $attendance, $officeLocation, $schedule = null, $session = 'morning')
     {
         $status = ucfirst(str_replace('_', ' ', $attendance->status));
         $statusEmoji = $this->getStatusEmoji($attendance->status);
+        $sessionEmoji = $session === 'morning' ? '🌞' : '🌅';
+        $sessionName = ucfirst($session);
+        
+        // Get check-in time based on session
+        $checkInTime = $session === 'morning' ? $attendance->morning_check_in : $attendance->afternoon_check_in;
         
         $message = "🟢 <b>CHECK-IN NOTIFICATION</b>\n";
         $message .= "━━━━━━━━━━━━━━━━━━━━━━\n\n";
@@ -64,7 +69,8 @@ class TelegramService
         
         $message .= "📅 <b>Date & Time</b>\n";
         $message .= "   Date: " . now()->format('l, F j, Y') . "\n";
-        $message .= "   Time: " . $attendance->check_in->format('h:i A') . "\n";
+        $message .= "   {$sessionEmoji} Session: {$sessionName}\n";
+        $message .= "   Time: " . $checkInTime->format('h:i A') . "\n";
         $message .= "\n";
         
         $message .= "📍 <b>Location Details</b>\n";
@@ -80,8 +86,9 @@ class TelegramService
         
         // Add schedule information if available
         if ($schedule) {
-            $scheduledTime = \Carbon\Carbon::parse($schedule->scheduled_check_in);
-            $actualTime = $attendance->check_in;
+            $scheduledTimeField = $session === 'morning' ? 'scheduled_check_in_morining' : 'scheduled_check_in_afternoon';
+            $scheduledTime = \Carbon\Carbon::parse($schedule->$scheduledTimeField);
+            $actualTime = $checkInTime;
             $diff = $scheduledTime->diffInMinutes($actualTime, false);
             
             $message .= "\n";
@@ -99,6 +106,17 @@ class TelegramService
             $message .= "   Tolerance: {$schedule->late_allowed_min} minutes\n";
         }
         
+        // Show session progress
+        $message .= "\n";
+        $message .= "📊 <b>Session Progress</b>\n";
+        if ($session === 'morning') {
+            $message .= "   🌞 Morning: ✅ Checked In\n";
+            $message .= "   🌅 Afternoon: " . ($attendance->afternoon_check_in ? "✅ Checked In" : "⏳ Pending") . "\n";
+        } else {
+            $message .= "   🌞 Morning: " . ($attendance->morning_check_in ? "✅ Completed" : "❌ Not checked in") . "\n";
+            $message .= "   🌅 Afternoon: ✅ Checked In\n";
+        }
+        
         if ($attendance->note) {
             $message .= "\n";
             $message .= "📝 <b>Note</b>\n";
@@ -114,10 +132,17 @@ class TelegramService
     /**
      * Send check-out notification
      */
-    public function sendCheckOutNotification($user, $attendance, $officeLocation)
+    public function sendCheckOutNotification($user, $attendance, $officeLocation, $session = 'morning')
     {
         $status = ucfirst(str_replace('_', ' ', $attendance->status));
         $statusEmoji = $this->getStatusEmoji($attendance->status);
+        $sessionEmoji = $session === 'morning' ? '🌞' : '🌅';
+        $sessionName = ucfirst($session);
+        
+        // Get session times
+        $checkInTime = $session === 'morning' ? $attendance->morning_check_in : $attendance->afternoon_check_in;
+        $checkOutTime = $session === 'morning' ? $attendance->morning_check_out : $attendance->afternoon_check_out;
+        $sessionHours = $session === 'morning' ? $attendance->formatted_morning_hours : $attendance->formatted_afternoon_hours;
         
         $message = "🔴 <b>CHECK-OUT NOTIFICATION</b>\n";
         $message .= "━━━━━━━━━━━━━━━━━━━━━━\n\n";
@@ -132,13 +157,27 @@ class TelegramService
         
         $message .= "📅 <b>Date & Time</b>\n";
         $message .= "   Date: " . now()->format('l, F j, Y') . "\n";
-        $message .= "   Check-In: " . $attendance->check_in->format('h:i A') . "\n";
-        $message .= "   Check-Out: " . $attendance->check_out->format('h:i A') . "\n";
+        $message .= "   {$sessionEmoji} Session: {$sessionName}\n";
+        $message .= "   Check-In: " . $checkInTime->format('h:i A') . "\n";
+        $message .= "   Check-Out: " . $checkOutTime->format('h:i A') . "\n";
         $message .= "\n";
         
         $message .= "⏱️ <b>Work Duration</b>\n";
-        $message .= "   Hours: " . ($attendance->formatted_work_hours ?? '—') . "\n";
-        $message .= "   Total: " . ($attendance->work_duration ?? 'N/A') . "\n";
+        $message .= "   {$sessionEmoji} {$sessionName} Session: {$sessionHours}\n";
+        $message .= "   📊 Total Today: " . ($attendance->formatted_work_hours ?? '—') . "\n";
+        $message .= "\n";
+        
+        // Session breakdown
+        $message .= "📈 <b>Session Breakdown</b>\n";
+        $message .= "   🌞 Morning: " . ($attendance->formatted_morning_hours ?? '—') . "\n";
+        $message .= "   🌅 Afternoon: " . ($attendance->formatted_afternoon_hours ?? '—') . "\n";
+        
+        // Show completion status
+        $message .= "\n";
+        $message .= "✅ <b>Completion Status</b>\n";
+        $message .= "   🌞 Morning: " . ($attendance->isMorningSessionComplete() ? "✅ Complete" : "⏳ Incomplete") . "\n";
+        $message .= "   🌅 Afternoon: " . ($attendance->isAfternoonSessionComplete() ? "✅ Complete" : "⏳ Incomplete") . "\n";
+        $message .= "   📅 Full Day: " . ($attendance->isFullDayComplete() ? "✅ Complete" : "⏳ Incomplete") . "\n";
         $message .= "\n";
         
         $message .= "📍 <b>Location Details</b>\n";
@@ -180,12 +219,22 @@ class TelegramService
         $totalLeave = $attendances->where('status', 'leave')->count();
         $totalHours = $attendances->sum('work_hours');
         
+        // Count session completions
+        $morningComplete = $attendances->filter(fn($a) => $a->isMorningSessionComplete())->count();
+        $afternoonComplete = $attendances->filter(fn($a) => $a->isAfternoonSessionComplete())->count();
+        $fullDayComplete = $attendances->filter(fn($a) => $a->isFullDayComplete())->count();
+        
         $message .= "📈 <b>Statistics</b>\n";
         $message .= "   ✅ Present: {$totalPresent}\n";
         $message .= "   ⚠️ Late: {$totalLate}\n";
         $message .= "   ❌ Absent: {$totalAbsent}\n";
         $message .= "   🏖️ Leave: {$totalLeave}\n";
-        $message .= "   ⏱️ Total Hours: " . number_format($totalHours, 1) . "h\n";
+        $message .= "   ⏱️ Total Hours: " . number_format($totalHours, 1) . "h\n\n";
+        
+        $message .= "📊 <b>Session Completion</b>\n";
+        $message .= "   🌞 Morning Sessions: {$morningComplete}\n";
+        $message .= "   🌅 Afternoon Sessions: {$afternoonComplete}\n";
+        $message .= "   ✅ Full Days: {$fullDayComplete}\n";
         
         $message .= "\n━━━━━━━━━━━━━━━━━━━━━━";
         $message .= "\n<i>Attendify System • Daily Report</i>";
