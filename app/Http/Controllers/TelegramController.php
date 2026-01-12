@@ -108,48 +108,81 @@ class TelegramController extends Controller
         }
     }
 
-    public function webhook(Request $request)
-    {
-        $update = $request->all();
+  public function webhook(Request $request)
+{
+    $update = $request->all();
 
-        // Handle /start command with binding token
-        if (isset($update['message']['text'])) {
-            $text = $update['message']['text'];
-            $chatId = $update['message']['chat']['id'];
-            $telegramUserId = $update['message']['from']['id'];
+    // Handle messages
+    if (isset($update['message']['text'])) {
+        $text = $update['message']['text'];
+        $chatId = $update['message']['chat']['id'];
+        $telegramUserId = $update['message']['from']['id'];
 
-            // Check if it's a start command with bind parameter
-            if (preg_match('/\/start bind_(.+)/', $text, $matches)) {
-                $token = $matches[1];
-                $this->handleBinding($chatId, $telegramUserId, $token);
-            }
-            // Handle /unbind command from bot
-            elseif (trim($text) === '/unbind') {
-                $this->handleBotUnbind($chatId, $telegramUserId);
-            }
-            // Handle /status command
-            elseif (trim($text) === '/status') {
-                $this->handleStatus($chatId, $telegramUserId);
-            }
+        // Check if it's a start command with bind parameter
+        if (preg_match('/\/start bind_(.+)/', $text, $matches)) {
+            $token = $matches[1];
+            $this->handleBinding($chatId, $telegramUserId, $token);
         }
-        // Handle phone number contact sharing
-        elseif (isset($update['message']['contact'])) {
-            $chatId = $update['message']['chat']['id'];
-            $telegramUserId = $update['message']['from']['id'];
-            $contact = $update['message']['contact'];
-            
-            // Verify it's the user's own phone number
-            if ($contact['user_id'] == $telegramUserId) {
-                $phoneNumber = $contact['phone_number'];
-                $this->verifyPhoneNumber($chatId, $telegramUserId, $phoneNumber);
-            } else {
-                $this->sendMessage($chatId, '❌ Please share your own phone number, not someone else\'s.');
-            }
+        // Handle /start command
+        elseif (trim($text) === '/start') {
+            $this->handleStart($chatId, $telegramUserId);
         }
-
-        return response()->json(['ok' => true]);
+        // Handle /unbind command from bot
+        elseif (trim($text) === '/unbind') {
+            $this->handleBotUnbind($chatId, $telegramUserId);
+        }
+        // Handle /status command
+        elseif (trim($text) === '/status') {
+            $this->handleStatus($chatId, $telegramUserId);
+        }
+        // Handle /help command
+        elseif (trim($text) === '/help') {
+            $this->handleHelp($chatId);
+        }
+    }
+    // Handle phone number contact sharing
+    elseif (isset($update['message']['contact'])) {
+        $chatId = $update['message']['chat']['id'];
+        $telegramUserId = $update['message']['from']['id'];
+        $contact = $update['message']['contact'];
+        
+        // Verify it's the user's own phone number
+        if ($contact['user_id'] == $telegramUserId) {
+            $phoneNumber = $contact['phone_number'];
+            $this->verifyPhoneNumber($chatId, $telegramUserId, $phoneNumber);
+        } else {
+            $this->sendMessage($chatId, '❌ Please share your own phone number, not someone else\'s.');
+        }
     }
 
+    return response()->json(['ok' => true]);
+}
+
+/**
+ * Handle /start command
+ */
+private function handleStart($chatId, $telegramUserId)
+{
+    $user = User::where('telegram_id', $telegramUserId)->first();
+    
+    if ($user) {
+        $message = "👋 <b>Welcome back, {$user->name}!</b>\n\n";
+        $message .= "Your account is already bound.\n\n";
+        $message .= "📧 Email: {$user->email}\n";
+        $message .= "📱 Phone: " . ($user->phone ?? 'N/A') . "\n\n";
+        $message .= "Use /status to see your account status\n";
+        $message .= "Use /help to see available commands";
+    } else {
+        $message = "👋 <b>Welcome to Attendify Bot!</b>\n\n";
+        $message .= "To get started, please bind your account from the website.\n\n";
+        $message .= "📱 Go to your account settings\n";
+        $message .= "🔗 Click 'Bind Telegram Account'\n";
+        $message .= "✅ Follow the instructions\n\n";
+        $message .= "Use /help to see available commands";
+    }
+    
+    $this->sendMessage($chatId, $message);
+}
     private function handleBotUnbind($chatId, $telegramUserId)
     {
         // Find user by telegram_id
@@ -366,4 +399,26 @@ class TelegramController extends Controller
             Log::error('Telegram API Error: ' . $e->getMessage());
         }
     }
+
+
+    /**
+ * Handle help command
+ */
+private function handleHelp($chatId)
+{
+    $message = "🤖 <b>Attendify Bot - Help</b>\n\n";
+    $message .= "<b>Available Commands:</b>\n\n";
+    $message .= "/start - Start the bot\n";
+    $message .= "/status - Check binding status\n";
+    $message .= "/unbind - Unbind your account\n";
+    $message .= "/help - Show this help message\n\n";
+    $message .= "<b>Features:</b>\n";
+    $message .= "• Receive check-in/out notifications\n";
+    $message .= "• Real-time attendance updates\n";
+    $message .= "• Account binding with phone verification\n\n";
+    $message .= "<b>Need Help?</b>\n";
+    $message .= "Contact your administrator for support.";
+
+    $this->sendMessage($chatId, $message);
+}
 }

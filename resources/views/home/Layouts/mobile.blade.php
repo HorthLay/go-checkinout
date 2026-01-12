@@ -3,9 +3,20 @@
   {{-- User Info Section --}}
   <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
     <div class="flex items-center gap-3">
-      <div class="size-12 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold shadow-sm">
-        {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
-      </div>
+      @php($user = Auth::user())
+
+      @if($user->image)
+        <img
+          src="{{ asset('users/' . $user->image) }}"
+          alt="{{ $user->name }}"
+          class="size-10 rounded-full object-cover shadow-sm"
+        >
+      @else
+        <div class="size-10 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold shadow-sm">
+          {{ strtoupper(substr($user->name, 0, 2)) }}
+        </div>
+      @endif
+
       <div>
         <p class="text-sm font-bold text-gray-900 dark:text-white">{{ Auth::user()->name }}</p>
         <p class="text-xs text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</p>
@@ -29,12 +40,21 @@
   <nav class="py-4 px-6 space-y-2">
     <p class="px-3 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Menu</p>
     
-    {{-- Dashboard --}}
-    <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('home') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all" 
-       href="{{ route('home') }}">
-      <span class="material-symbols-outlined">dashboard</span>
-      <span class="font-medium">Dashboard</span>
-    </a>
+    @if(Auth::user()->role_type === 'admin')
+      {{-- Admin Dashboard --}}
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('admin.dashboard') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all" 
+         href="{{ route('admin.dashboard') }}">
+        <span class="material-symbols-outlined">dashboard</span>
+        <span class="font-medium">Dashboard</span>
+      </a>
+    @else
+      {{-- User Attendance Log --}}
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('home') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all" 
+         href="{{ route('home') }}">
+        <span class="material-symbols-outlined">event_note</span>
+        <span class="font-medium">Attendance Log</span>
+      </a>
+    @endif
     
     {{-- Check-In --}}
     <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('checkin') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all" 
@@ -43,36 +63,53 @@
       <span class="font-medium">Check-In</span>
     </a>
     
-    {{-- Attendance --}}
-    <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('attendance') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all" 
-       href="{{ route('attendance') }}">
-      <span class="material-symbols-outlined">how_to_reg</span>
-      <span class="font-medium">Attendance</span>
-    </a>
+    {{-- Attendance (User) / Log Attendance (Admin) --}}
+    @if(Auth::user()->role_type === 'admin')
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('admin.attendance*') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all" 
+         href="{{ route('admin.attendance.index') }}">
+        <span class="material-symbols-outlined">fact_check</span>
+        <span class="font-medium">Log Attendance</span>
+      </a>
+    @else
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('attendance') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all" 
+         href="{{ route('attendance') }}">
+        <span class="material-symbols-outlined">how_to_reg</span>
+        <span class="font-medium">My Schedule</span>
+      </a>
+    @endif
     
-    {{-- Reports --}}
-    <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('reports') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all" 
-       href="{{ route('reports') }}">
-      <span class="material-symbols-outlined">bar_chart</span>
-      <span class="font-medium">Reports</span>
-    </a>
+    {{-- QR Code (Admin Only) --}}
+    @if(Auth::user()->role_type === 'admin')
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('qrcode') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all" 
+         href="{{ route('qrcode') }}">
+        <span class="material-symbols-outlined">qr_code_2</span>
+        <span class="font-medium">QR Code</span>
+      </a>
+      
+      {{-- Reports --}}
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('reports') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all" 
+         href="{{ route('reports') }}">
+        <span class="material-symbols-outlined">bar_chart</span>
+        <span class="font-medium">Reports</span>
+      </a>
+    @endif
     
     {{-- Admin Only Section --}}
     @if(Auth::user()->role_type === 'admin')
       <p class="px-3 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-4">Management</p>
       
-      {{-- Log Attendance --}}
-      <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('admin.attendance*') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all" 
-         href="{{ route('admin.attendance.index') }}">
-        <span class="material-symbols-outlined">event_note</span>
-        <span class="font-medium">Log Attendance</span>
-      </a>
-      
       {{-- Employees --}}
-      <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('employees') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all" 
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('employees*') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all" 
          href="{{ route('employees') }}">
         <span class="material-symbols-outlined">group</span>
         <span class="font-medium">Employees</span>
+      </a>
+
+         {{-- Employees --}}
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('map*') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all" 
+         href="{{ route('map.created') }}">
+        <span class="material-symbols-outlined">place</span>
+        <span class="font-medium">Map</span>
       </a>
     @endif
     

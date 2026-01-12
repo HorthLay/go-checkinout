@@ -83,6 +83,7 @@
         }
       }
     </style>
+    @livewireStyles
   </head>
   <body
     class="bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 font-display flex h-screen overflow-hidden"
@@ -375,6 +376,7 @@
       </main>
     </div>
 
+    @livewireScripts
     <script>
       // Mobile Menu & Profile Dropdown
       const menuToggle = document.getElementById("menu-toggle");
@@ -421,5 +423,6 @@
         }
       }
     </script>
+     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   </body>
 </html>
