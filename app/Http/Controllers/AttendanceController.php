@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Attendance;
 use App\Models\AttendanceSchedule;
 use App\Models\AttendanceOffDay;
+use App\Models\OfficeLocation;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -118,4 +119,80 @@ public function index(){
         return redirect()->route('attendance', ['tab' => 'dayoffs'])
                         ->with('success', 'Day off deleted successfully!');
     }
+
+
+
+    public function show($id)
+{
+    $attendance = Attendance::with(['user', 'user.attendanceSchedule'])->findOrFail($id);
+    $officeLocation = OfficeLocation::first();
+    
+    return view('admin.attendance.show', compact('attendance', 'officeLocation'));
+}
+
+/**
+ * Show the form for editing the specified attendance record
+ */
+public function edit($id)
+{
+    $attendance = Attendance::with(['user'])->findOrFail($id);
+    
+    return view('admin.attendance.edit', compact('attendance'));
+}
+
+/**
+ * Update the specified attendance record
+ */
+public function update(Request $request, $id)
+{
+    $request->validate([
+        'morning_check_in' => 'nullable|date_format:H:i',
+        'morning_check_out' => 'nullable|date_format:H:i',
+        'afternoon_check_in' => 'nullable|date_format:H:i',
+        'afternoon_check_out' => 'nullable|date_format:H:i',
+        'status' => 'required|in:on_time,late,absent,leave',
+        'note' => 'nullable|string|max:500',
+    ]);
+
+    $attendance = Attendance::findOrFail($id);
+    
+    // Update times
+    if ($request->morning_check_in) {
+        $attendance->morning_check_in = \Carbon\Carbon::parse($attendance->attendance_date->format('Y-m-d') . ' ' . $request->morning_check_in);
+    }
+    
+    if ($request->morning_check_out) {
+        $attendance->morning_check_out = \Carbon\Carbon::parse($attendance->attendance_date->format('Y-m-d') . ' ' . $request->morning_check_out);
+    }
+    
+    if ($request->afternoon_check_in) {
+        $attendance->afternoon_check_in = \Carbon\Carbon::parse($attendance->attendance_date->format('Y-m-d') . ' ' . $request->afternoon_check_in);
+    }
+    
+    if ($request->afternoon_check_out) {
+        $attendance->afternoon_check_out = \Carbon\Carbon::parse($attendance->attendance_date->format('Y-m-d') . ' ' . $request->afternoon_check_out);
+    }
+    
+    $attendance->status = $request->status;
+    $attendance->note = $request->note;
+    
+    // Recalculate work hours
+    $attendance->calculateWorkHours();
+    $attendance->save();
+    
+    return redirect()->route('attendance', ['tab' => 'records'])
+                     ->with('success', 'Attendance record updated successfully');
+}
+
+/**
+ * Remove the specified attendance record
+ */
+public function destroy($id)
+{
+    $attendance = Attendance::findOrFail($id);
+    $attendance->delete();
+    
+    return redirect()->route('admin.attendance.log', ['tab' => 'records'])
+                     ->with('success', 'Attendance record deleted successfully');
+}
 }

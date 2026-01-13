@@ -97,7 +97,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::patch('/map/{id}/toggle', [AdminController::class, 'toggle'])->name('map.toggle');
     Route::delete('/map/{id}', [AdminController::class, 'destroy'])->name('map.destroy');
 
-
+Route::get('/admin/attendance/{id}', [AttendanceController::class, 'show'])->name('admin.attendance.show');
+Route::get('/admin/attendance/{id}/edit', [AttendanceController::class, 'edit'])->name('admin.attendance.edit');
+Route::put('/admin/attendance/{id}', [AttendanceController::class, 'update'])->name('admin.attendance.update');
+Route::delete('/admin/attendance/{id}', [AttendanceController::class, 'destroy'])->name('admin.attendance.delete');
     // setting
      Route::get('/settings', [SettingController::class, 'index'])->name('settings');
     Route::put('/settings', action: [SettingController::class, 'update'])->name('settings.update');
