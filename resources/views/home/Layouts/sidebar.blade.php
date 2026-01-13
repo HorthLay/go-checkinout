@@ -86,14 +86,14 @@
     @endif
     
     <p class="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-8">System</p>
-    
+       @if(Auth::user()->role_type === 'admin')
     {{-- Settings --}}
     <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('settings') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all group" 
        href="{{ route('settings') }}">
       <span class="material-symbols-outlined {{ request()->routeIs('settings') ? '' : 'text-gray-500 group-hover:text-primary' }} transition-colors">settings</span>
       <span class="font-medium {{ request()->routeIs('settings') ? '' : 'group-hover:text-gray-900 dark:group-hover:text-white' }} transition-colors">Settings</span>
     </a>
-    
+    @endif
     {{-- Support --}}
     <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('support') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all group" 
        href="{{ route('support') }}">

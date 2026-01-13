@@ -52,37 +52,42 @@ class TelegramService
         $statusEmoji = $this->getStatusEmoji($attendance->status);
         $sessionEmoji = $session === 'morning' ? '🌞' : '🌅';
         $sessionName = ucfirst($session);
+        $sessionNameKh = $session === 'morning' ? 'ព្រឹក' : 'រសៀល';
         
         // Get check-in time based on session
         $checkInTime = $session === 'morning' ? $attendance->morning_check_in : $attendance->afternoon_check_in;
         
-        $message = "🟢 <b>CHECK-IN NOTIFICATION</b>\n";
+        // Get day of week in both languages
+        $dayEn = now()->format('l');
+        $dayKh = $this->getDayInKhmer(now()->dayOfWeek);
+        
+        $message = "🟢 <b>ការជូនដំណឹងចូលធ្វើការ / CHECK-IN NOTIFICATION</b>\n";
         $message .= "━━━━━━━━━━━━━━━━━━━━━━\n\n";
         
-        $message .= "👤 <b>Employee Information</b>\n";
-        $message .= "   Name: {$user->name}\n";
-        $message .= "   Email: {$user->email}\n";
+        $message .= "👤 <b>ព័ត៌មានបុគ្គលិក / Employee Information</b>\n";
+        $message .= "   ឈ្មោះ / Name: {$user->name}\n";
+        $message .= "   អ៊ីមែល / Email: {$user->email}\n";
         if ($user->phone) {
-            $message .= "   Phone: {$user->phone}\n";
+            $message .= "   លេខទូរស័ព្ទ / Phone: {$user->phone}\n";
         }
         $message .= "\n";
         
-        $message .= "📅 <b>Date & Time</b>\n";
-        $message .= "   Date: " . now()->format('l, F j, Y') . "\n";
-        $message .= "   {$sessionEmoji} Session: {$sessionName}\n";
-        $message .= "   Time: " . $checkInTime->format('h:i A') . "\n";
+        $message .= "📅 <b>កាលបរិច្ឆេទ និងពេលវេលា / Date & Time</b>\n";
+        $message .= "   កាលបរិច្ឆេទ / Date: {$dayKh} / {$dayEn}, " . now()->format('F j, Y') . "\n";
+        $message .= "   {$sessionEmoji} វេន / Session: {$sessionNameKh} / {$sessionName}\n";
+        $message .= "   ម៉ោង / Time: " . $checkInTime->format('h:i A') . "\n";
         $message .= "\n";
         
-        $message .= "📍 <b>Location Details</b>\n";
-        $message .= "   Office: {$officeLocation->name}\n";
+        $message .= "📍 <b>ព័ត៌មានទីតាំង / Location Details</b>\n";
+        $message .= "   ការិយាល័យ / Office: {$officeLocation->name}\n";
         if ($officeLocation->address) {
-            $message .= "   Address: {$officeLocation->address}\n";
+            $message .= "   អាសយដ្ឋាន / Address: {$officeLocation->address}\n";
         }
-        $message .= "   Coordinates: {$attendance->latitude}, {$attendance->longitude}\n";
-        $message .= "   Distance: " . round($officeLocation->calculateDistance($attendance->latitude, $attendance->longitude)) . "m\n";
+        $message .= "   កូអរដោនេ / Coordinates: {$attendance->latitude}, {$attendance->longitude}\n";
+        $message .= "   ចម្ងាយ / Distance: " . round($officeLocation->calculateDistance($attendance->latitude, $attendance->longitude)) . "m\n";
         $message .= "\n";
         
-        $message .= "{$statusEmoji} <b>Status: {$status}</b>\n";
+        $message .= "{$statusEmoji} <b>ស្ថានភាព / Status: {$status}</b>\n";
         
         // Add schedule information if available
         if ($schedule) {
@@ -92,39 +97,39 @@ class TelegramService
             $diff = $scheduledTime->diffInMinutes($actualTime, false);
             
             $message .= "\n";
-            $message .= "⏰ <b>Schedule Information</b>\n";
-            $message .= "   Expected: " . $scheduledTime->format('h:i A') . "\n";
-            $message .= "   Actual: " . $actualTime->format('h:i A') . "\n";
+            $message .= "⏰ <b>ព័ត៌មានកាលវិភាគ / Schedule Information</b>\n";
+            $message .= "   រំពឹងទុក / Expected: " . $scheduledTime->format('h:i A') . "\n";
+            $message .= "   ពិតប្រាកដ / Actual: " . $actualTime->format('h:i A') . "\n";
             
             if ($diff > 0) {
-                $message .= "   ⚠️ Late by: {$diff} minutes\n";
+                $message .= "   ⚠️ យឺតយ៉ាវ / Late by: {$diff} នាទី / minutes\n";
             } elseif ($diff < 0) {
-                $message .= "   ✅ Early by: " . abs($diff) . " minutes\n";
+                $message .= "   ✅ មុនម៉ោង / Early by: " . abs($diff) . " នាទី / minutes\n";
             } else {
-                $message .= "   ✅ On time\n";
+                $message .= "   ✅ ទាន់ពេលវេលា / On time\n";
             }
-            $message .= "   Tolerance: {$schedule->late_allowed_min} minutes\n";
+            $message .= "   និទ្ទន្តភាព / Tolerance: {$schedule->late_allowed_min} នាទី / minutes\n";
         }
         
         // Show session progress
         $message .= "\n";
-        $message .= "📊 <b>Session Progress</b>\n";
+        $message .= "📊 <b>វឌ្ឍនភាពវេន / Session Progress</b>\n";
         if ($session === 'morning') {
-            $message .= "   🌞 Morning: ✅ Checked In\n";
-            $message .= "   🌅 Afternoon: " . ($attendance->afternoon_check_in ? "✅ Checked In" : "⏳ Pending") . "\n";
+            $message .= "   🌞 ព្រឹក / Morning: ✅ បានចូលធ្វើការ / Checked In\n";
+            $message .= "   🌅 រសៀល / Afternoon: " . ($attendance->afternoon_check_in ? "✅ បានចូលធ្វើការ / Checked In" : "⏳ រង់ចាំ / Pending") . "\n";
         } else {
-            $message .= "   🌞 Morning: " . ($attendance->morning_check_in ? "✅ Completed" : "❌ Not checked in") . "\n";
-            $message .= "   🌅 Afternoon: ✅ Checked In\n";
+            $message .= "   🌞 ព្រឹក / Morning: " . ($attendance->morning_check_in ? "✅ បានបញ្ចប់ / Completed" : "❌ មិនទាន់ចូល / Not checked in") . "\n";
+            $message .= "   🌅 រសៀល / Afternoon: ✅ បានចូលធ្វើការ / Checked In\n";
         }
         
         if ($attendance->note) {
             $message .= "\n";
-            $message .= "📝 <b>Note</b>\n";
+            $message .= "📝 <b>កំណត់ចំណាំ / Note</b>\n";
             $message .= "   " . $this->escapeHtml($attendance->note) . "\n";
         }
         
         $message .= "\n━━━━━━━━━━━━━━━━━━━━━━";
-        $message .= "\n<i>Attendify System • " . now()->format('Y-m-d H:i:s') . "</i>";
+        $message .= "\n<i>ប្រព័ន្ធ Attendify / Attendify System • " . now()->format('Y-m-d H:i:s') . "</i>";
 
         return $message;
     }
@@ -138,66 +143,71 @@ class TelegramService
         $statusEmoji = $this->getStatusEmoji($attendance->status);
         $sessionEmoji = $session === 'morning' ? '🌞' : '🌅';
         $sessionName = ucfirst($session);
+        $sessionNameKh = $session === 'morning' ? 'ព្រឹក' : 'រសៀល';
         
         // Get session times
         $checkInTime = $session === 'morning' ? $attendance->morning_check_in : $attendance->afternoon_check_in;
         $checkOutTime = $session === 'morning' ? $attendance->morning_check_out : $attendance->afternoon_check_out;
         $sessionHours = $session === 'morning' ? $attendance->formatted_morning_hours : $attendance->formatted_afternoon_hours;
         
-        $message = "🔴 <b>CHECK-OUT NOTIFICATION</b>\n";
+        // Get day of week in both languages
+        $dayEn = now()->format('l');
+        $dayKh = $this->getDayInKhmer(now()->dayOfWeek);
+        
+        $message = "🔴 <b>ការជូនដំណឹងចេញពីការងារ / CHECK-OUT NOTIFICATION</b>\n";
         $message .= "━━━━━━━━━━━━━━━━━━━━━━\n\n";
         
-        $message .= "👤 <b>Employee Information</b>\n";
-        $message .= "   Name: {$user->name}\n";
-        $message .= "   Email: {$user->email}\n";
+        $message .= "👤 <b>ព័ត៌មានបុគ្គលិក / Employee Information</b>\n";
+        $message .= "   ឈ្មោះ / Name: {$user->name}\n";
+        $message .= "   អ៊ីមែល / Email: {$user->email}\n";
         if ($user->phone) {
-            $message .= "   Phone: {$user->phone}\n";
+            $message .= "   លេខទូរស័ព្ទ / Phone: {$user->phone}\n";
         }
         $message .= "\n";
         
-        $message .= "📅 <b>Date & Time</b>\n";
-        $message .= "   Date: " . now()->format('l, F j, Y') . "\n";
-        $message .= "   {$sessionEmoji} Session: {$sessionName}\n";
-        $message .= "   Check-In: " . $checkInTime->format('h:i A') . "\n";
-        $message .= "   Check-Out: " . $checkOutTime->format('h:i A') . "\n";
+        $message .= "📅 <b>កាលបរិច្ឆេទ និងពេលវេលា / Date & Time</b>\n";
+        $message .= "   កាលបរិច្ឆេទ / Date: {$dayKh} / {$dayEn}, " . now()->format('F j, Y') . "\n";
+        $message .= "   {$sessionEmoji} វេន / Session: {$sessionNameKh} / {$sessionName}\n";
+        $message .= "   ចូលធ្វើការ / Check-In: " . $checkInTime->format('h:i A') . "\n";
+        $message .= "   ចេញពីការងារ / Check-Out: " . $checkOutTime->format('h:i A') . "\n";
         $message .= "\n";
         
-        $message .= "⏱️ <b>Work Duration</b>\n";
-        $message .= "   {$sessionEmoji} {$sessionName} Session: {$sessionHours}\n";
-        $message .= "   📊 Total Today: " . ($attendance->formatted_work_hours ?? '—') . "\n";
+        $message .= "⏱️ <b>រយៈពេលធ្វើការ / Work Duration</b>\n";
+        $message .= "   {$sessionEmoji} វេន{$sessionNameKh} / {$sessionName} Session: {$sessionHours}\n";
+        $message .= "   📊 សរុបថ្ងៃនេះ / Total Today: " . ($attendance->formatted_work_hours ?? '—') . "\n";
         $message .= "\n";
         
         // Session breakdown
-        $message .= "📈 <b>Session Breakdown</b>\n";
-        $message .= "   🌞 Morning: " . ($attendance->formatted_morning_hours ?? '—') . "\n";
-        $message .= "   🌅 Afternoon: " . ($attendance->formatted_afternoon_hours ?? '—') . "\n";
+        $message .= "📈 <b>ពិពណ៌នាវេន / Session Breakdown</b>\n";
+        $message .= "   🌞 ព្រឹក / Morning: " . ($attendance->formatted_morning_hours ?? '—') . "\n";
+        $message .= "   🌅 រសៀល / Afternoon: " . ($attendance->formatted_afternoon_hours ?? '—') . "\n";
         
         // Show completion status
         $message .= "\n";
-        $message .= "✅ <b>Completion Status</b>\n";
-        $message .= "   🌞 Morning: " . ($attendance->isMorningSessionComplete() ? "✅ Complete" : "⏳ Incomplete") . "\n";
-        $message .= "   🌅 Afternoon: " . ($attendance->isAfternoonSessionComplete() ? "✅ Complete" : "⏳ Incomplete") . "\n";
-        $message .= "   📅 Full Day: " . ($attendance->isFullDayComplete() ? "✅ Complete" : "⏳ Incomplete") . "\n";
+        $message .= "✅ <b>ស្ថានភាពបញ្ចប់ / Completion Status</b>\n";
+        $message .= "   🌞 ព្រឹក / Morning: " . ($attendance->isMorningSessionComplete() ? "✅ បញ្ចប់ / Complete" : "⏳ មិនទាន់បញ្ចប់ / Incomplete") . "\n";
+        $message .= "   🌅 រសៀល / Afternoon: " . ($attendance->isAfternoonSessionComplete() ? "✅ បញ្ចប់ / Complete" : "⏳ មិនទាន់បញ្ចប់ / Incomplete") . "\n";
+        $message .= "   📅 ពេញមួយថ្ងៃ / Full Day: " . ($attendance->isFullDayComplete() ? "✅ បញ្ចប់ / Complete" : "⏳ មិនទាន់បញ្ចប់ / Incomplete") . "\n";
         $message .= "\n";
         
-        $message .= "📍 <b>Location Details</b>\n";
-        $message .= "   Office: {$officeLocation->name}\n";
+        $message .= "📍 <b>ព័ត៌មានទីតាំង / Location Details</b>\n";
+        $message .= "   ការិយាល័យ / Office: {$officeLocation->name}\n";
         if ($officeLocation->address) {
-            $message .= "   Address: {$officeLocation->address}\n";
+            $message .= "   អាសយដ្ឋាន / Address: {$officeLocation->address}\n";
         }
-        $message .= "   Coordinates: {$attendance->latitude}, {$attendance->longitude}\n";
+        $message .= "   កូអរដោនេ / Coordinates: {$attendance->latitude}, {$attendance->longitude}\n";
         $message .= "\n";
         
-        $message .= "{$statusEmoji} <b>Status: {$status}</b>\n";
+        $message .= "{$statusEmoji} <b>ស្ថានភាព / Status: {$status}</b>\n";
         
         if ($attendance->note) {
             $message .= "\n";
-            $message .= "📝 <b>Note</b>\n";
+            $message .= "📝 <b>កំណត់ចំណាំ / Note</b>\n";
             $message .= "   " . $this->escapeHtml($attendance->note) . "\n";
         }
         
         $message .= "\n━━━━━━━━━━━━━━━━━━━━━━";
-        $message .= "\n<i>Attendify System • " . now()->format('Y-m-d H:i:s') . "</i>";
+        $message .= "\n<i>ប្រព័ន្ធ Attendify / Attendify System • " . now()->format('Y-m-d H:i:s') . "</i>";
 
         return $message;
     }
@@ -207,11 +217,15 @@ class TelegramService
      */
     public function sendDailySummary($user, $attendances)
     {
-        $message = "📊 <b>DAILY ATTENDANCE SUMMARY</b>\n";
+        // Get day of week in both languages
+        $dayEn = now()->format('l');
+        $dayKh = $this->getDayInKhmer(now()->dayOfWeek);
+        
+        $message = "📊 <b>សង្ខេបវត្តមានប្រចាំថ្ងៃ / DAILY ATTENDANCE SUMMARY</b>\n";
         $message .= "━━━━━━━━━━━━━━━━━━━━━━\n\n";
         
-        $message .= "👤 <b>Employee:</b> {$user->name}\n";
-        $message .= "📅 <b>Date:</b> " . now()->format('l, F j, Y') . "\n\n";
+        $message .= "👤 <b>បុគ្គលិក / Employee:</b> {$user->name}\n";
+        $message .= "📅 <b>កាលបរិច្ឆេទ / Date:</b> {$dayKh} / {$dayEn}, " . now()->format('F j, Y') . "\n\n";
         
         $totalPresent = $attendances->whereIn('status', ['on_time', 'late'])->count();
         $totalLate = $attendances->where('status', 'late')->count();
@@ -224,20 +238,20 @@ class TelegramService
         $afternoonComplete = $attendances->filter(fn($a) => $a->isAfternoonSessionComplete())->count();
         $fullDayComplete = $attendances->filter(fn($a) => $a->isFullDayComplete())->count();
         
-        $message .= "📈 <b>Statistics</b>\n";
-        $message .= "   ✅ Present: {$totalPresent}\n";
-        $message .= "   ⚠️ Late: {$totalLate}\n";
-        $message .= "   ❌ Absent: {$totalAbsent}\n";
-        $message .= "   🏖️ Leave: {$totalLeave}\n";
-        $message .= "   ⏱️ Total Hours: " . number_format($totalHours, 1) . "h\n\n";
+        $message .= "📈 <b>ស្ថិតិ / Statistics</b>\n";
+        $message .= "   ✅ មានវត្តមាន / Present: {$totalPresent}\n";
+        $message .= "   ⚠️ យឺតយ៉ាវ / Late: {$totalLate}\n";
+        $message .= "   ❌ អវត្តមាន / Absent: {$totalAbsent}\n";
+        $message .= "   🏖️ សម្រាក / Leave: {$totalLeave}\n";
+        $message .= "   ⏱️ ម៉ោងសរុប / Total Hours: " . number_format($totalHours, 1) . "h\n\n";
         
-        $message .= "📊 <b>Session Completion</b>\n";
-        $message .= "   🌞 Morning Sessions: {$morningComplete}\n";
-        $message .= "   🌅 Afternoon Sessions: {$afternoonComplete}\n";
-        $message .= "   ✅ Full Days: {$fullDayComplete}\n";
+        $message .= "📊 <b>ការបញ្ចប់វេន / Session Completion</b>\n";
+        $message .= "   🌞 វេនព្រឹក / Morning Sessions: {$morningComplete}\n";
+        $message .= "   🌅 វេនរសៀល / Afternoon Sessions: {$afternoonComplete}\n";
+        $message .= "   ✅ ពេញមួយថ្ងៃ / Full Days: {$fullDayComplete}\n";
         
         $message .= "\n━━━━━━━━━━━━━━━━━━━━━━";
-        $message .= "\n<i>Attendify System • Daily Report</i>";
+        $message .= "\n<i>ប្រព័ន្ធ Attendify / Attendify System • របាយការណ៍ប្រចាំថ្ងៃ / Daily Report</i>";
         
         return $message;
     }
@@ -247,27 +261,46 @@ class TelegramService
      */
     public function sendLocationAlert($user, $distance, $officeLocation)
     {
-        $message = "⚠️ <b>LOCATION ALERT</b>\n";
+        $message = "⚠️ <b>ការជូនដំណឹងទីតាំង / LOCATION ALERT</b>\n";
         $message .= "━━━━━━━━━━━━━━━━━━━━━━\n\n";
         
-        $message .= "👤 <b>Employee:</b> {$user->name}\n";
-        $message .= "📧 <b>Email:</b> {$user->email}\n\n";
+        $message .= "👤 <b>បុគ្គលិក / Employee:</b> {$user->name}\n";
+        $message .= "📧 <b>អ៊ីមែល / Email:</b> {$user->email}\n\n";
         
-        $message .= "🚨 <b>Alert Details</b>\n";
+        $message .= "🚨 <b>ព័ត៌មានការជូនដំណឹង / Alert Details</b>\n";
+        $message .= "   អ្នកប្រើប្រាស់បានព្យាយាមចូលធ្វើការនៅខាងក្រៅតំបន់អនុញ្ញាត\n";
         $message .= "   User attempted check-in outside allowed area\n\n";
         
-        $message .= "📍 <b>Location Information</b>\n";
-        $message .= "   Office: {$officeLocation->name}\n";
-        $message .= "   Allowed Radius: {$officeLocation->radius}m\n";
-        $message .= "   Actual Distance: {$distance}m\n";
-        $message .= "   ❌ Outside by: " . ($distance - $officeLocation->radius) . "m\n\n";
+        $message .= "📍 <b>ព័ត៌មានទីតាំង / Location Information</b>\n";
+        $message .= "   ការិយាល័យ / Office: {$officeLocation->name}\n";
+        $message .= "   កាំអនុញ្ញាត / Allowed Radius: {$officeLocation->radius}m\n";
+        $message .= "   ចម្ងាយពិតប្រាកដ / Actual Distance: {$distance}m\n";
+        $message .= "   ❌ ក្រៅពី / Outside by: " . ($distance - $officeLocation->radius) . "m\n\n";
         
-        $message .= "🕐 <b>Time:</b> " . now()->format('h:i A') . "\n";
+        $message .= "🕐 <b>ពេលវេលា / Time:</b> " . now()->format('h:i A') . "\n";
         
         $message .= "\n━━━━━━━━━━━━━━━━━━━━━━";
-        $message .= "\n<i>Attendify System • Security Alert</i>";
+        $message .= "\n<i>ប្រព័ន្ធ Attendify / Attendify System • ការជូនដំណឹងសុវត្ថិភាព / Security Alert</i>";
         
         return $message;
+    }
+
+    /**
+     * Get day of week in Khmer
+     */
+    private function getDayInKhmer($dayOfWeek)
+    {
+        $daysKhmer = [
+            0 => 'អាទិត្យ',      // Sunday
+            1 => 'ច័ន្ទ',         // Monday
+            2 => 'អង្គារ',        // Tuesday
+            3 => 'ពុធ',          // Wednesday
+            4 => 'ព្រហស្បតិ៍',   // Thursday
+            5 => 'សុក្រ',        // Friday
+            6 => 'សៅរ៍',        // Saturday
+        ];
+        
+        return $daysKhmer[$dayOfWeek] ?? '';
     }
 
     /**

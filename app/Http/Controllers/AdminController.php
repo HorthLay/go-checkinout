@@ -256,6 +256,19 @@ class AdminController extends Controller
         
         $attendances = $query->get();
         
+        // Calculate session completion statistics
+        $morningComplete = $attendances->filter(function($a) {
+            return $a->isMorningSessionComplete();
+        })->count();
+        
+        $afternoonComplete = $attendances->filter(function($a) {
+            return $a->isAfternoonSessionComplete();
+        })->count();
+        
+        $fullDayComplete = $attendances->filter(function($a) {
+            return $a->isFullDayComplete();
+        })->count();
+        
         // Calculate statistics
         $stats = [
             'total_present' => $attendances->whereIn('status', ['on_time', 'late'])->count(),
@@ -264,6 +277,11 @@ class AdminController extends Controller
             'total_leave' => $attendances->where('status', 'leave')->count(),
             'total_hours' => $attendances->sum('work_hours'),
             'avg_hours' => $attendances->avg('work_hours'),
+            'morning_sessions_complete' => $morningComplete,
+            'afternoon_sessions_complete' => $afternoonComplete,
+            'full_days_complete' => $fullDayComplete,
+            'total_morning_hours' => $attendances->sum('morning_work_hours'),
+            'total_afternoon_hours' => $attendances->sum('afternoon_work_hours'),
         ];
         
         // Get top 5 users by work hours
@@ -280,17 +298,22 @@ class AdminController extends Controller
                        ->take(5)
                        ->get();
         
-        // Daily attendance summary
+        // Daily attendance summary with day of week
         $dailySummary = $attendances->groupBy(function($item) {
             return $item->attendance_date->format('Y-m-d');
         })->map(function($dayAttendances) {
+            $date = $dayAttendances->first()->attendance_date;
             return [
-                'date' => $dayAttendances->first()->attendance_date,
+                'date' => $date,
+                'day_name' => $date->format('l'), // Day of week (Monday, Tuesday, etc.)
+                'day_name_short' => $date->format('D'), // Short day (Mon, Tue, etc.)
                 'present' => $dayAttendances->whereIn('status', ['on_time', 'late'])->count(),
                 'late' => $dayAttendances->where('status', 'late')->count(),
                 'absent' => $dayAttendances->where('status', 'absent')->count(),
                 'leave' => $dayAttendances->where('status', 'leave')->count(),
                 'total_hours' => $dayAttendances->sum('work_hours'),
+                'morning_hours' => $dayAttendances->sum('morning_work_hours'),
+                'afternoon_hours' => $dayAttendances->sum('afternoon_work_hours'),
             ];
         })->values();
         
@@ -330,6 +353,19 @@ class AdminController extends Controller
         
         $attendances = $query->orderBy('attendance_date', 'asc')->get();
         
+        // Calculate session completion statistics
+        $morningComplete = $attendances->filter(function($a) {
+            return $a->isMorningSessionComplete();
+        })->count();
+        
+        $afternoonComplete = $attendances->filter(function($a) {
+            return $a->isAfternoonSessionComplete();
+        })->count();
+        
+        $fullDayComplete = $attendances->filter(function($a) {
+            return $a->isFullDayComplete();
+        })->count();
+        
         // Calculate statistics
         $stats = [
             'total_present' => $attendances->whereIn('status', ['on_time', 'late'])->count(),
@@ -338,6 +374,11 @@ class AdminController extends Controller
             'total_leave' => $attendances->where('status', 'leave')->count(),
             'total_hours' => $attendances->sum('work_hours'),
             'avg_hours' => $attendances->avg('work_hours'),
+            'morning_sessions_complete' => $morningComplete,
+            'afternoon_sessions_complete' => $afternoonComplete,
+            'full_days_complete' => $fullDayComplete,
+            'total_morning_hours' => $attendances->sum('morning_work_hours'),
+            'total_afternoon_hours' => $attendances->sum('afternoon_work_hours'),
         ];
         
         // Get top 5 users by work hours
@@ -363,6 +404,87 @@ class AdminController extends Controller
             'userId'
         ));
     }
+
+
+
+    public function exportCSV(Request $request)
+{
+    // Get filter parameters
+    $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
+    $endDate   = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
+    $userId    = $request->input('user_id');
+
+    // Build query
+    $query = Attendance::with(['user'])
+        ->whereBetween('attendance_date', [$startDate, $endDate])
+        ->orderBy('attendance_date', 'asc');
+
+    if ($userId) {
+        $query->where('user_id', $userId);
+    }
+
+    $attendances = $query->get();
+
+    // Filename
+    $filename = 'attendance-report-' . now()->format('Y-m-d-His') . '.csv';
+
+    // Headers
+    $headers = [
+        'Content-Type'        => 'text/csv; charset=utf-8',
+        'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        'Pragma'              => 'no-cache',
+        'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+        'Expires'             => '0',
+    ];
+
+    // Stream CSV
+    $callback = function () use ($attendances) {
+        $file = fopen('php://output', 'w');
+
+        // UTF-8 BOM (Excel safe)
+        fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+        // CSV Header Row
+        fputcsv($file, [
+            'Employee',
+            'Email',
+            'Day',
+            'Date',
+            'Morning Check-In',
+            'Morning Check-Out',
+            'Afternoon Check-In',
+            'Afternoon Check-Out',
+            'Total Hours',
+            'Morning Hours',
+            'Afternoon Hours',
+            'Status',
+            'Absent Note',
+        ]);
+
+        // CSV Rows
+        foreach ($attendances as $attendance) {
+            fputcsv($file, [
+                $attendance->user->name,
+                $attendance->user->email,
+                $attendance->attendance_date->format('l'),
+                $attendance->attendance_date->format('Y-m-d'),
+                $attendance->morning_check_in ? $attendance->morning_check_in->format('H:i:s') : '-',
+                $attendance->morning_check_out ? $attendance->morning_check_out->format('H:i:s') : '-',
+                $attendance->afternoon_check_in ? $attendance->afternoon_check_in->format('H:i:s') : '-',
+                $attendance->afternoon_check_out ? $attendance->afternoon_check_out->format('H:i:s') : '-',
+                $attendance->work_hours ?? '0',
+                $attendance->morning_work_hours ?? '0',
+                $attendance->afternoon_work_hours ?? '0',
+                ucfirst(str_replace('_', ' ', $attendance->status)),
+                $attendance->status === 'absent' ? $attendance->absent_note : '',
+            ]);
+        }
+
+        fclose($file);
+    };
+
+    return response()->stream($callback, 200, $headers);
+}
 
 // notification
 

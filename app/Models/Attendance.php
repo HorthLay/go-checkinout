@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class Attendance extends Model
 {
@@ -350,5 +351,239 @@ class Attendance extends Model
               ->orWhereNull('afternoon_check_in')
               ->orWhereNull('afternoon_check_out');
         });
+    }
+
+    // Working Days Integration (using cache-based configuration)
+
+    /**
+     * Check if a specific date is a working day
+     */
+    public static function isWorkingDay(Carbon $date)
+    {
+        $dayName = strtolower($date->format('l')); // e.g., "monday"
+        $workingDays = Cache::get('working_days', ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
+        
+        return in_array($dayName, $workingDays);
+    }
+
+    /**
+     * Check if today is a working day
+     */
+    public static function isTodayWorkingDay()
+    {
+        return self::isWorkingDay(now());
+    }
+
+    /**
+     * Check if the attendance date is a working day
+     */
+    public function isAttendanceDateWorkingDay()
+    {
+        return self::isWorkingDay($this->attendance_date);
+    }
+
+    /**
+     * Get working hours configuration for a specific date
+     */
+    public static function getWorkingHoursForDate(Carbon $date)
+    {
+        $dayName = strtolower($date->format('l'));
+        $workingDaysConfig = Cache::get('working_days_config', []);
+        
+        if (!isset($workingDaysConfig[$dayName]) || !$workingDaysConfig[$dayName]['is_working']) {
+            return null;
+        }
+
+        return [
+            'morning' => [
+                'start' => $workingDaysConfig[$dayName]['morning_start'] ?? '07:30',
+                'end' => $workingDaysConfig[$dayName]['morning_end'] ?? '11:30',
+            ],
+            'afternoon' => [
+                'start' => $workingDaysConfig[$dayName]['afternoon_start'] ?? '14:00',
+                'end' => $workingDaysConfig[$dayName]['afternoon_end'] ?? '17:30',
+            ],
+        ];
+    }
+
+    /**
+     * Get today's working hours
+     */
+    public static function getTodayWorkingHours()
+    {
+        return self::getWorkingHoursForDate(now());
+    }
+
+    /**
+     * Get working hours for this attendance's date
+     */
+    public function getWorkingHours()
+    {
+        return self::getWorkingHoursForDate($this->attendance_date);
+    }
+
+    /**
+     * Check if current time is within working hours
+     */
+    public static function isWithinWorkingHours(Carbon $time = null)
+    {
+        $time = $time ?? now();
+        
+        if (!self::isWorkingDay($time)) {
+            return false;
+        }
+
+        $hours = self::getWorkingHoursForDate($time);
+        if (!$hours) {
+            return false;
+        }
+
+        $currentTime = $time->format('H:i');
+        
+        // Check morning session
+        if ($currentTime >= $hours['morning']['start'] && $currentTime <= $hours['morning']['end']) {
+            return true;
+        }
+        
+        // Check afternoon session
+        if ($currentTime >= $hours['afternoon']['start'] && $currentTime <= $hours['afternoon']['end']) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Get current session (morning or afternoon)
+     */
+    public static function getCurrentSession(Carbon $time = null)
+    {
+        $time = $time ?? now();
+        
+        if (!self::isWorkingDay($time)) {
+            return null;
+        }
+
+        $hours = self::getWorkingHoursForDate($time);
+        if (!$hours) {
+            return null;
+        }
+
+        $currentTime = $time->format('H:i');
+        
+        // Check morning session
+        if ($currentTime >= $hours['morning']['start'] && $currentTime <= $hours['morning']['end']) {
+            return 'morning';
+        }
+        
+        // Check afternoon session  
+        if ($currentTime >= $hours['afternoon']['start'] && $currentTime <= $hours['afternoon']['end']) {
+            return 'afternoon';
+        }
+        
+        // Between sessions or outside hours
+        if ($currentTime < $hours['morning']['start']) {
+            return 'before_work';
+        } elseif ($currentTime > $hours['morning']['end'] && $currentTime < $hours['afternoon']['start']) {
+            return 'break_time';
+        } else {
+            return 'after_work';
+        }
+    }
+
+    /**
+     * Scope: Only working days
+     */
+    public function scopeWorkingDaysOnly($query)
+    {
+        $workingDays = Cache::get('working_days', ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
+        
+        return $query->where(function($q) use ($workingDays) {
+            foreach ($workingDays as $day) {
+                $dayNumber = array_search($day, ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']);
+                $q->orWhereRaw('DAYOFWEEK(attendance_date) = ?', [$dayNumber + 1]);
+            }
+        });
+    }
+
+    /**
+     * Scope: Only non-working days
+     */
+    public function scopeNonWorkingDaysOnly($query)
+    {
+        $workingDays = Cache::get('working_days', ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
+        $allDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        $nonWorkingDays = array_diff($allDays, $workingDays);
+        
+        return $query->where(function($q) use ($nonWorkingDays) {
+            foreach ($nonWorkingDays as $day) {
+                $dayNumber = array_search($day, ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']);
+                $q->orWhereRaw('DAYOFWEEK(attendance_date) = ?', [$dayNumber + 1]);
+            }
+        });
+    }
+
+    /**
+     * Get next working day from a given date
+     */
+    public static function getNextWorkingDay(Carbon $date = null)
+    {
+        $date = $date ? $date->copy() : now();
+        $maxAttempts = 14; // Check up to 2 weeks ahead
+        
+        for ($i = 0; $i < $maxAttempts; $i++) {
+            $date->addDay();
+            
+            if (self::isWorkingDay($date)) {
+                return $date;
+            }
+        }
+        
+        return now()->addDay();
+    }
+
+    /**
+     * Count working days in date range
+     */
+    public static function countWorkingDaysInRange(Carbon $startDate, Carbon $endDate)
+    {
+        $count = 0;
+        $current = $startDate->copy();
+        
+        while ($current->lte($endDate)) {
+            if (self::isWorkingDay($current)) {
+                $count++;
+            }
+            $current->addDay();
+        }
+        
+        return $count;
+    }
+
+    /**
+     * Get all configured working days
+     */
+    public static function getConfiguredWorkingDays()
+    {
+        return Cache::get('working_days', ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
+    }
+
+    /**
+     * Get formatted working days list
+     */
+    public static function getFormattedWorkingDaysList()
+    {
+        $days = self::getConfiguredWorkingDays();
+        $formatted = array_map('ucfirst', $days);
+        
+        if (empty($formatted)) {
+            return 'No working days configured';
+        }
+        
+        if (count($formatted) === 7) {
+            return 'All days';
+        }
+        
+        return implode(', ', $formatted);
     }
 }

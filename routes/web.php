@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CheckinController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\SettingController;
 use App\Http\Controllers\TelegramController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -40,7 +41,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/home',[HomeController::class,'index'])->name('home');
      Route::get('/checkin', [CheckinController::class, 'index'])->name('checkin');
     Route::get('/my-schedule', [AttendanceController::class, 'index'])->name('attendance');
-    Route::get('/settings', [HomeController::class, 'setting'])->name('settings');
     Route::get('/support', [HomeController::class, 'support'])->name('support');
       Route::get('/checkin', [CheckInController::class, 'index'])->name('checkin');
     Route::get('/attendance/verify', [CheckInController::class, 'verify'])->name('attendance.verify');
@@ -86,7 +86,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
      Route::get('/reports', [AdminController::class, 'report'])->name('reports');
      Route::get('/reports/print', [AdminController::class, 'reportPrint'])->name('reports.print');
-
+     Route::get('/reports/export-csv', [AdminController::class, 'exportCSV'])->name('reports.export-csv');
 
     //  created map
  Route::get('/map', [AdminController::class, 'mapcreated'])->name('map.created');
@@ -96,6 +96,14 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::put('/map/{id}', [AdminController::class, 'update'])->name('map.update');
     Route::patch('/map/{id}/toggle', [AdminController::class, 'toggle'])->name('map.toggle');
     Route::delete('/map/{id}', [AdminController::class, 'destroy'])->name('map.destroy');
+
+
+    // setting
+     Route::get('/settings', [SettingController::class, 'index'])->name('settings');
+    Route::put('/settings', action: [SettingController::class, 'update'])->name('settings.update');
+     Route::post('/settings/export', [SettingController::class, 'exportData'])->name('settings.export');
+    Route::post('/settings/clear-cache', [SettingController::class, 'clearCache'])->name('settings.clear-cache');
+    Route::delete('/settings/reset-data', [SettingController::class, 'resetData'])->name('settings.reset-data');
 });
 
 Route::post('/telegram/webhook', [TelegramController::class, 'webhook']);

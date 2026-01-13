@@ -71,4 +71,8 @@ class HomeController extends Controller
             'hasDayOffToday'
         ));
     }
+
+    public function support(){
+        return view('home.support');
+    }
 }

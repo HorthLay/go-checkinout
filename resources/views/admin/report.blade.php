@@ -378,96 +378,159 @@
         </div>
 
         <!-- Detailed Records Table -->
-        <div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
-          <div class="p-6 border-b border-gray-100 dark:border-gray-800">
-            <div class="flex items-center justify-between">
-              <div>
-                <h3 class="text-lg font-bold text-gray-900 dark:text-white">Detailed Attendance Records</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $attendances->count() }} total records</p>
-              </div>
-              <button
-                onclick="exportToCSV()"
-                class="no-print px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-colors flex items-center gap-2"
-              >
-                <span class="material-symbols-outlined text-lg">download</span>
-                <span class="hidden md:inline">Export CSV</span>
-              </button>
-            </div>
-          </div>
+      <div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
 
-          <!-- Desktop Table -->
-          <div class="overflow-x-auto">
-            <table class="w-full">
-              <thead class="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
-                <tr>
-                  <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Employee</th>
-                  <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Date</th>
-                  <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Morning</th>
-                  <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Afternoon</th>
-                  <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Hours</th>
-                  <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Status</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                @forelse($attendances as $attendance)
-                  <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td class="py-4 px-6">
-                      <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $attendance->user->name }}</p>
-                      <p class="text-xs text-gray-500 dark:text-gray-400">{{ $attendance->user->email }}</p>
-                    </td>
-                    <td class="py-4 px-6">
-                      <p class="text-sm text-gray-900 dark:text-white">{{ $attendance->attendance_date->format('M d, Y') }}</p>
-                      <p class="text-xs text-gray-500 dark:text-gray-400">{{ $attendance->attendance_date->format('l') }}</p>
-                    </td>
-                    <td class="py-4 px-6">
-                      <div class="text-xs space-y-1">
-                        <p class="text-gray-900 dark:text-white">
-                          <span class="text-gray-500">In:</span> {{ $attendance->morning_check_in ? $attendance->morning_check_in->format('h:i A') : '—' }}
-                        </p>
-                        <p class="text-gray-900 dark:text-white">
-                          <span class="text-gray-500">Out:</span> {{ $attendance->morning_check_out ? $attendance->morning_check_out->format('h:i A') : '—' }}
-                        </p>
-                      </div>
-                    </td>
-                    <td class="py-4 px-6">
-                      <div class="text-xs space-y-1">
-                        <p class="text-gray-900 dark:text-white">
-                          <span class="text-gray-500">In:</span> {{ $attendance->afternoon_check_in ? $attendance->afternoon_check_in->format('h:i A') : '—' }}
-                        </p>
-                        <p class="text-gray-900 dark:text-white">
-                          <span class="text-gray-500">Out:</span> {{ $attendance->afternoon_check_out ? $attendance->afternoon_check_out->format('h:i A') : '—' }}
-                        </p>
-                      </div>
-                    </td>
-                    <td class="py-4 px-6">
-                      <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $attendance->formatted_work_hours ?? '—' }}</p>
-                      <p class="text-xs text-gray-500 dark:text-gray-400">M: {{ $attendance->formatted_morning_hours }} | A: {{ $attendance->formatted_afternoon_hours }}</p>
-                    </td>
-                    <td class="py-4 px-6">
-                      <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium
-                        {{ $attendance->status === 'on_time' ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' : '' }}
-                        {{ $attendance->status === 'late' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' : '' }}
-                        {{ $attendance->status === 'absent' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' : '' }}
-                        {{ $attendance->status === 'leave' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' : '' }}
-                      ">
-                        {{ ucfirst(str_replace('_', ' ', $attendance->status)) }}
-                      </span>
-                    </td>
-                  </tr>
-                @empty
-                  <tr>
-                    <td colspan="6" class="py-12 text-center">
-                      <div class="flex flex-col items-center gap-3">
-                        <span class="material-symbols-outlined text-5xl text-gray-300">search_off</span>
-                        <p class="text-gray-500 dark:text-gray-400">No attendance records found</p>
-                      </div>
-                    </td>
-                  </tr>
-                @endforelse
-              </tbody>
-            </table>
-          </div>
-        </div>
+  <!-- Header -->
+  <div class="p-6 border-b border-gray-100 dark:border-gray-800">
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Detailed Attendance Records</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          {{ $attendances->count() }} total records
+        </p>
+      </div>
+
+      <div class="flex gap-2">
+        <a
+          href="{{ route('reports.export-csv', request()->all()) }}"
+          class="no-print px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-colors flex items-center gap-2"
+        >
+          <span class="material-symbols-outlined text-lg">download</span>
+          <span class="hidden md:inline">Export CSV</span>
+        </a>
+
+        <button
+          onclick="exportToCSV()"
+          class="no-print px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors flex items-center gap-2"
+        >
+          <span class="material-symbols-outlined text-lg">file_download</span>
+          <span class="hidden md:inline">Quick Export</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead class="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
+        <tr>
+          <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Employee</th>
+          <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Date</th>
+          <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Morning</th>
+          <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Afternoon</th>
+          <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Hours</th>
+          <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Status</th>
+          <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Absent Note</th>
+        </tr>
+      </thead>
+
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        @forelse($attendances as $attendance)
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+
+            <!-- Employee -->
+            <td class="py-4 px-6">
+              <p class="text-sm font-medium text-gray-900 dark:text-white">
+                {{ $attendance->user->name }}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                {{ $attendance->user->email }}
+              </p>
+            </td>
+
+            <!-- Date -->
+            <td class="py-4 px-6">
+              <p class="text-sm font-medium text-gray-900 dark:text-white">
+                {{ $attendance->attendance_date->format('M d, Y') }}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                {{ $attendance->attendance_date->format('l') }}
+              </p>
+            </td>
+
+            <!-- Morning -->
+            <td class="py-4 px-6">
+              <div class="text-xs space-y-1">
+                <p>
+                  <span class="text-gray-500">In:</span>
+                  {{ $attendance->morning_check_in?->format('h:i A') ?? '—' }}
+                </p>
+                <p>
+                  <span class="text-gray-500">Out:</span>
+                  {{ $attendance->morning_check_out?->format('h:i A') ?? '—' }}
+                </p>
+              </div>
+            </td>
+
+            <!-- Afternoon -->
+            <td class="py-4 px-6">
+              <div class="text-xs space-y-1">
+                <p>
+                  <span class="text-gray-500">In:</span>
+                  {{ $attendance->afternoon_check_in?->format('h:i A') ?? '—' }}
+                </p>
+                <p>
+                  <span class="text-gray-500">Out:</span>
+                  {{ $attendance->afternoon_check_out?->format('h:i A') ?? '—' }}
+                </p>
+              </div>
+            </td>
+
+            <!-- Hours -->
+            <td class="py-4 px-6">
+              <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                {{ $attendance->formatted_work_hours ?? '—' }}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                M: {{ $attendance->formatted_morning_hours }} |
+                A: {{ $attendance->formatted_afternoon_hours }}
+              </p>
+            </td>
+
+            <!-- Status -->
+            <td class="py-4 px-6">
+              <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium
+                {{ $attendance->status === 'on_time' ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' : '' }}
+                {{ $attendance->status === 'late' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' : '' }}
+                {{ $attendance->status === 'absent' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' : '' }}
+                {{ $attendance->status === 'leave' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' : '' }}
+              ">
+                {{ ucfirst(str_replace('_', ' ', $attendance->status)) }}
+              </span>
+            </td>
+
+            <!-- Absent Note -->
+            <td class="py-4 px-6 max-w-xs">
+              @if($attendance->status === 'absent' && $attendance->absent_note)
+                <div class="text-xs text-gray-700 dark:text-gray-300 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg border border-red-100 dark:border-red-800">
+                  {{ $attendance->absent_note }}
+                </div>
+              @else
+                <span class="text-gray-400 text-xs">—</span>
+              @endif
+            </td>
+
+          </tr>
+        @empty
+          <tr>
+            <td colspan="7" class="py-12 text-center">
+              <div class="flex flex-col items-center gap-3">
+                <span class="material-symbols-outlined text-5xl text-gray-300">
+                  search_off
+                </span>
+                <p class="text-gray-500 dark:text-gray-400">
+                  No attendance records found
+                </p>
+              </div>
+            </td>
+          </tr>
+        @endforelse
+      </tbody>
+    </table>
+  </div>
+</div>
+
       </main>
     </div>
 
@@ -566,23 +629,38 @@
       function exportToCSV() {
         const attendances = @json($attendances);
         
-        let csv = 'Employee,Email,Date,Morning In,Morning Out,Afternoon In,Afternoon Out,Total Hours,Morning Hours,Afternoon Hours,Status\n';
+        let csv = 'Employee,Email,Day,Date,Morning In,Morning Out,Afternoon In,Afternoon Out,Total Hours,Morning Hours,Afternoon Hours,Status\n';
         
         attendances.forEach(att => {
+          // Parse the date properly
+          let dateStr = att.attendance_date.date || att.attendance_date;
+          const dateObj = new Date(dateStr);
+          const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+          const dateFormatted = dateObj.toLocaleDateString('en-US');
+          
+          // Helper function to format time
+          const formatTime = (timeData) => {
+            if (!timeData) return '-';
+            let timeStr = timeData.date || timeData;
+            const time = new Date(timeStr);
+            return time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+          };
+          
           csv += `"${att.user.name}",`;
           csv += `"${att.user.email}",`;
-          csv += `"${new Date(att.attendance_date.date).toLocaleDateString()}",`;
-          csv += `"${att.morning_check_in ? new Date(att.morning_check_in.date).toLocaleTimeString() : '-'}",`;
-          csv += `"${att.morning_check_out ? new Date(att.morning_check_out.date).toLocaleTimeString() : '-'}",`;
-          csv += `"${att.afternoon_check_in ? new Date(att.afternoon_check_in.date).toLocaleTimeString() : '-'}",`;
-          csv += `"${att.afternoon_check_out ? new Date(att.afternoon_check_out.date).toLocaleTimeString() : '-'}",`;
+          csv += `"${dayName}",`;
+          csv += `"${dateFormatted}",`;
+          csv += `"${formatTime(att.morning_check_in)}",`;
+          csv += `"${formatTime(att.morning_check_out)}",`;
+          csv += `"${formatTime(att.afternoon_check_in)}",`;
+          csv += `"${formatTime(att.afternoon_check_out)}",`;
           csv += `"${att.work_hours || '0'}",`;
           csv += `"${att.morning_work_hours || '0'}",`;
           csv += `"${att.afternoon_work_hours || '0'}",`;
           csv += `"${att.status}"\n`;
         });
 
-        const blob = new Blob([csv], { type: 'text/csv' });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;

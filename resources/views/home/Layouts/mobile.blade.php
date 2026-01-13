@@ -114,14 +114,14 @@
     @endif
     
     <p class="px-3 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-4">System</p>
-    
+       @if(Auth::user()->role_type === 'admin')
     {{-- Settings --}}
     <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('settings') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all" 
        href="{{ route('settings') }}">
       <span class="material-symbols-outlined">settings</span>
       <span class="font-medium">Settings</span>
     </a>
-    
+    @endif
     {{-- Support --}}
     <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('support') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all" 
        href="{{ route('support') }}">
