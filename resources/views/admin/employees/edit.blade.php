@@ -315,6 +315,24 @@
                   @enderror
                 </div>
 
+                <!-- Gender -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Gender <span class="text-red-500">*</span>
+                  </label>
+                  <select 
+                    name="gender" 
+                    required 
+                    class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors @error('gender') border-red-500 @enderror"
+                  >
+                    <option value="male" {{ old('gender', $employee->gender) == 'male' ? 'selected' : '' }}>Male</option>
+                    <option value="female" {{ old('gender', $employee->gender) == 'female' ? 'selected' : '' }}>Female</option>
+                  </select>
+                  @error('gender')
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                  @enderror
+                </div>
+
                 <!-- Status -->
                 <div>
                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">

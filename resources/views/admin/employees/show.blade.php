@@ -91,6 +91,14 @@
           min-width: 44px;
         }
       }
+
+      /* Gender badge animation */
+      .gender-badge {
+        transition: all 0.2s ease;
+      }
+      .gender-badge:hover {
+        transform: scale(1.05);
+      }
     </style>
   </head>
   <body
@@ -140,77 +148,89 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <!-- Employee Profile Card -->
-      <div class="lg:col-span-1">
-  <div class="bg-surface-light dark:bg-surface-dark rounded-2xl border border-gray-100 dark:border-gray-800 p-6 sticky top-6">
-    <div class="flex flex-col items-center text-center">
-      @if($employee->image)
-        <img src="{{ asset('users/' . $employee->image) }}" alt="{{ $employee->name }}" class="size-32 rounded-full object-cover shadow-xl mb-4">
-      @else
-        <div class="size-32 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-4xl shadow-xl mb-4">
-          {{ strtoupper(substr($employee->name, 0, 2)) }}
-        </div>
-      @endif
-      
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">{{ $employee->name }}</h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">{{ $employee->email ?? 'No email provided' }}</p>
-      
-      <div class="flex gap-2 mb-4">
-        <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium {{ $employee->role_type === 'admin' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' }}">
-          {{ ucfirst($employee->role_type) }}
-        </span>
-        <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium {{ $employee->active ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' }}">
-          {{ $employee->active ? 'Active' : 'Inactive' }}
-        </span>
-      </div>
+          <div class="lg:col-span-1">
+            <div class="bg-surface-light dark:bg-surface-dark rounded-2xl border border-gray-100 dark:border-gray-800 p-6 sticky top-6">
+              <div class="flex flex-col items-center text-center">
+                @if($employee->image)
+                  <img src="{{ asset('users/' . $employee->image) }}" alt="{{ $employee->name }}" class="size-32 rounded-full object-cover shadow-xl mb-4">
+                @else
+                  <div class="size-32 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-4xl shadow-xl mb-4">
+                    {{ strtoupper(substr($employee->name, 0, 2)) }}
+                  </div>
+                @endif
+                
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">{{ $employee->name }}</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">{{ $employee->email ?? 'No email provided' }}</p>
+                
+                <div class="flex gap-2 mb-4">
+                  <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium {{ $employee->role_type === 'admin' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' }}">
+                    {{ ucfirst($employee->role_type) }}
+                  </span>
+                  <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium {{ $employee->active ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' }}">
+                    {{ $employee->active ? 'Active' : 'Inactive' }}
+                  </span>
+                </div>
 
-      <div class="w-full pt-6 border-t border-gray-100 dark:border-gray-800 space-y-4">
-        <div class="flex items-center gap-3 text-sm">
-          <div class="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <span class="material-symbols-outlined text-gray-400">badge</span>
-          </div>
-          <div class="text-left flex-1">
-            <p class="text-xs text-gray-500 dark:text-gray-400">Employee ID</p>
-            <p class="text-sm font-medium text-gray-900 dark:text-white">#{{ str_pad($employee->id, 4, '0', STR_PAD_LEFT) }}</p>
-          </div>
-        </div>
+                <div class="w-full pt-6 border-t border-gray-100 dark:border-gray-800 space-y-4">
+                  <div class="flex items-center gap-3 text-sm">
+                    <div class="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <span class="material-symbols-outlined text-gray-400">badge</span>
+                    </div>
+                    <div class="text-left flex-1">
+                      <p class="text-xs text-gray-500 dark:text-gray-400">Employee ID</p>
+                      <p class="text-sm font-medium text-gray-900 dark:text-white">#{{ str_pad($employee->id, 4, '0', STR_PAD_LEFT) }}</p>
+                    </div>
+                  </div>
 
-        <div class="flex items-center gap-3 text-sm">
-          <div class="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <span class="material-symbols-outlined text-gray-400">phone</span>
-          </div>
-          <div class="text-left flex-1">
-            <p class="text-xs text-gray-500 dark:text-gray-400">Phone Number</p>
-            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $employee->phone ?? 'Not provided' }}</p>
-          </div>
-        </div>
+                  <div class="flex items-center gap-3 text-sm">
+                    <div class="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <span class="material-symbols-outlined text-gray-400">
+                        {{ $employee->gender === 'male' ? 'male' : 'female' }}
+                      </span>
+                    </div>
+                    <div class="text-left flex-1">
+                      <p class="text-xs text-gray-500 dark:text-gray-400">Gender</p>
+                      <p class="text-sm font-medium text-gray-900 dark:text-white">{{ ucfirst($employee->gender ?? 'N/A') }}</p>
+                    </div>
+                  </div>
 
-        <div class="flex items-center gap-3 text-sm">
-          <div class="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <span class="material-symbols-outlined text-gray-400">calendar_today</span>
-          </div>
-          <div class="text-left flex-1">
-            <p class="text-xs text-gray-500 dark:text-gray-400">Joined Date</p>
-            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $employee->created_at->format('M d, Y') }}</p>
-          </div>
-        </div>
+                  <div class="flex items-center gap-3 text-sm">
+                    <div class="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <span class="material-symbols-outlined text-gray-400">phone</span>
+                    </div>
+                    <div class="text-left flex-1">
+                      <p class="text-xs text-gray-500 dark:text-gray-400">Phone Number</p>
+                      <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $employee->phone ?? 'Not provided' }}</p>
+                    </div>
+                  </div>
 
-        @if($employee->telegram_id)
-          <div class="flex items-center gap-3 text-sm">
-            <div class="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <svg class="w-5 h-5 text-green-600 dark:text-green-400" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161l-1.84 8.673c-.137.645-.503.804-.997.5l-2.756-2.031-1.327 1.277c-.147.147-.27.27-.552.27l.197-2.8 5.102-4.61c.222-.197-.048-.308-.345-.11l-6.304 3.97-2.715-.848c-.59-.184-.602-.59.125-.873l10.606-4.088c.493-.178.925.11.763.872z"/>
-              </svg>
+                  <div class="flex items-center gap-3 text-sm">
+                    <div class="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <span class="material-symbols-outlined text-gray-400">calendar_today</span>
+                    </div>
+                    <div class="text-left flex-1">
+                      <p class="text-xs text-gray-500 dark:text-gray-400">Joined Date</p>
+                      <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $employee->created_at->format('M d, Y') }}</p>
+                    </div>
+                  </div>
+
+                  @if($employee->telegram_id)
+                    <div class="flex items-center gap-3 text-sm">
+                      <div class="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                        <svg class="w-5 h-5 text-green-600 dark:text-green-400" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161l-1.84 8.673c-.137.645-.503.804-.997.5l-2.756-2.031-1.327 1.277c-.147.147-.27.27-.552.27l.197-2.8 5.102-4.61c.222-.197-.048-.308-.345-.11l-6.304 3.97-2.715-.848c-.59-.184-.602-.59.125-.873l10.606-4.088c.493-.178.925.11.763.872z"/>
+                        </svg>
+                      </div>
+                      <div class="text-left flex-1">
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Telegram</p>
+                        <p class="text-sm font-medium text-green-600 dark:text-green-400">Connected</p>
+                      </div>
+                    </div>
+                  @endif
+                </div>
+              </div>
             </div>
-            <div class="text-left flex-1">
-              <p class="text-xs text-gray-500 dark:text-gray-400">Telegram</p>
-              <p class="text-sm font-medium text-green-600 dark:text-green-400">Connected</p>
-            </div>
           </div>
-        @endif
-      </div>
-    </div>
-  </div>
-</div>
 
           <!-- Details Section -->
           <div class="lg:col-span-2 space-y-6">
@@ -232,6 +252,17 @@
                 <div>
                   <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phone Number</label>
                   <p class="text-sm font-medium text-gray-900 dark:text-white mt-1">{{ $employee->phone ?? 'Not provided' }}</p>
+                </div>
+                <div>
+                  <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Gender</label>
+                  <p class="text-sm font-medium mt-1">
+                    <span class="gender-badge inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium {{ $employee->gender === 'male' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400' }}">
+                      <span class="material-symbols-outlined text-base">
+                        {{ $employee->gender === 'male' ? 'male' : 'female' }}
+                      </span>
+                      {{ ucfirst($employee->gender ?? 'N/A') }}
+                    </span>
+                  </p>
                 </div>
                 <div>
                   <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">User Role</label>

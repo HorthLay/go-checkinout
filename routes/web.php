@@ -109,6 +109,8 @@ Route::delete('/admin/attendance/{id}', [AttendanceController::class, 'destroy']
     Route::delete('/settings/reset-data', [SettingController::class, 'resetData'])->name('settings.reset-data');
 });
 
-Route::post('/telegram/webhook', [TelegramController::class, 'webhook']);
+Route::get('/telegram/setup', [TelegramController::class, 'setupWebhook']);
+Route::get('/telegram/info', [TelegramController::class, 'webhookInfo']);
+Route::get('/telegram/remove', [TelegramController::class, 'removeWebhook']);
 
 Auth::routes(['verify' => true]);

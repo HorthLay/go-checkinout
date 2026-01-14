@@ -14,9 +14,19 @@
 
         <div class="relative">
             <button id="profile-toggle" aria-label="Toggle profile dropdown" class="flex items-center gap-3 pl-2 hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-lg transition-colors">
-                <div class="size-10 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold shadow-sm">
-                    {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
-                </div>
+               @php($user = Auth::user())
+                @if($user->image)
+        <img
+          src="{{ asset('users/' . $user->image) }}"
+          alt="{{ $user->name }}"
+          class="size-10 rounded-full object-cover shadow-sm"
+        >
+      @else
+        <div class="size-10 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold shadow-sm">
+          {{ strtoupper(substr($user->name, 0, 2)) }}
+        </div>
+      @endif
+     
                 <div class="hidden md:block">
                     <p class="text-sm font-bold text-gray-900 dark:text-white leading-none">{{ Auth::user()->name }}</p>
                     <p class="text-[11px] text-gray-500 font-medium mt-1">{{ ucfirst(Auth::user()->role_type) }}</p>

@@ -20,6 +20,14 @@ class EmployeeController extends Controller
         return view('admin.employees', compact('employees'));
     }
 
+
+    public function edit($id)
+    {
+        $employee = User::findOrFail($id);
+        return view('admin.employees.edit', compact('employee'));
+    }
+
+
     public function store(Request $request)
     {
         $request->validate([
@@ -28,6 +36,7 @@ class EmployeeController extends Controller
             'phone' => 'nullable|string|max:20',
             'password' => 'required|string|min:8',
             'role_type' => 'required|in:user,admin',
+            'gender' => 'required|in:male,female',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // 2MB max
         ]);
 
@@ -37,17 +46,16 @@ class EmployeeController extends Controller
             'phone' => $request->phone,
             'password' => Hash::make($request->password),
             'role_type' => $request->role_type,
+            'gender' => $request->gender,
             'active' => $request->has('active'),
         ];
 
         // Handle image upload
         if ($request->hasFile('image')) {
             $image = $request->file('image');
-            $imageName = time() . '_' . Str::slug($request->name) . '.' . $image->getClientOriginalExtension();
-            
-            // Move to public/users directory
-            $image->move(public_path('users'), $imageName);
-            $data['image'] = $imageName;
+            $imageName = time() . '.' . $image->getClientOriginalExtension();
+            $image->move('users', $imageName); // relative folder
+            $data['image'] = $imageName; // store filename in DB
         }
 
         User::create($data);
@@ -61,12 +69,6 @@ class EmployeeController extends Controller
         return view('admin.employees.show', compact('employee'));
     }
 
-    public function edit($id)
-    {
-        $employee = User::findOrFail($id);
-        return view('admin.employees.edit', compact('employee'));
-    }
-
     public function update(Request $request, $id)
     {
         $employee = User::findOrFail($id);
@@ -76,6 +78,7 @@ class EmployeeController extends Controller
             'email' => 'nullable|email|unique:users,email,' . $id,
             'phone' => 'nullable|string|max:20',
             'role_type' => 'required|in:user,admin',
+            'gender' => 'required|in:male,female',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
@@ -84,6 +87,7 @@ class EmployeeController extends Controller
             'email' => $request->email,
             'phone' => $request->phone,
             'role_type' => $request->role_type,
+            'gender' => $request->gender,
             'active' => $request->has('active'),
         ];
 
@@ -103,11 +107,9 @@ class EmployeeController extends Controller
             }
 
             $image = $request->file('image');
-            $imageName = time() . '_' . Str::slug($request->name) . '.' . $image->getClientOriginalExtension();
-            
-            // Move to public/users directory
-            $image->move(public_path('users'), $imageName);
-            $data['image'] = $imageName;
+            $imageName = time() . '.' . $image->getClientOriginalExtension();
+            $image->move('users', $imageName); // relative folder
+            $data['image'] = $imageName; // store filename in DB
         }
 
         // Only update password if provided
