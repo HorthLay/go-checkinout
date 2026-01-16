@@ -62,11 +62,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/dashboard',[AdminController::class,'index'])->name('admin.dashboard');
 
     Route::get('/log-attendance',[AdminController::class,'attendance'])->name('admin.attendance.index');
-     Route::get('/notifications', [AdminController::class, 'notifications'])->name('admin.notifications');
-    Route::post('/notifications/mark-all-read', [AdminController::class, 'markAllNotificationsRead'])->name('admin.notifications.mark-all-read');
-    Route::post('/notifications/{id}/mark-read', [AdminController::class, 'markNotificationRead'])->name('admin.notifications.mark-read');
-    Route::delete('/notifications/{id}', [AdminController::class, 'deleteNotification'])->name('admin.notifications.delete');
-    Route::delete('/notifications/delete-all-read', [AdminController::class, 'deleteAllReadNotifications'])->name('admin.notifications.delete-all-read');
+    Route::get('/notifications', [AdminController::class, 'notifications'])->name('admin.notifications');
+Route::post('/notifications/{id}/mark-read', [AdminController::class, 'markNotificationRead'])->name('admin.notifications.mark-read');
+Route::post('/notifications/mark-all-read', [AdminController::class, 'markAllNotificationsRead'])->name('admin.notifications.mark-all-read');
+Route::delete('/notifications/{id}', [AdminController::class, 'deleteNotification'])->name('admin.notifications.delete');
+Route::delete('/notifications/delete-all-read', [AdminController::class, 'deleteAllReadNotifications'])->name('admin.notifications.delete-all-read');
    
 // Attendance
         Route::post('/schedule', [AttendanceController::class, 'storeSchedule'])->name('admin.attendance.schedule.store');

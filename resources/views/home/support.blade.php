@@ -387,7 +387,7 @@
               </div>
               <h3 class="font-bold text-gray-900 dark:text-white mb-2">Email Support</h3>
               <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Send us an email</p>
-              <a href="mailto:support@attendify.com" class="text-sm text-primary hover:underline">support@attendify.com</a>
+              <a href="mailto:layhorth14@gmail.com" class="text-sm text-primary hover:underline">layhorth14@gmail.com</a>
             </div>
 
             <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary transition-colors">
@@ -396,7 +396,7 @@
               </div>
               <h3 class="font-bold text-gray-900 dark:text-white mb-2">Phone Support</h3>
               <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Call us</p>
-              <a href="tel:+855123456789" class="text-sm text-primary hover:underline">+855 12 345 6789</a>
+              <a href="tel:+855966011905" class="text-sm text-primary hover:underline">+855 96 601 1905</a>
             </div>
 
             <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary transition-colors">
@@ -405,7 +405,7 @@
               </div>
               <h3 class="font-bold text-gray-900 dark:text-white mb-2">Telegram</h3>
               <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Message us</p>
-              <a href="https://t.me/attendify_support" class="text-sm text-primary hover:underline">@attendify_support</a>
+              <a href="https://t.me/Horth_lay" class="text-sm text-primary hover:underline">@horth_lay</a>
             </div>
           </div>
 

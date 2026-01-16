@@ -54,7 +54,7 @@
     </script>
     <style>
       body {
-        font-family: "Inter", sans-serif;
+        font-family: "Inter", sans-serif";
       }
       .no-scrollbar::-webkit-scrollbar {
         display: none;
@@ -68,6 +68,80 @@
         position: relative;
         height: 300px;
         width: 100%;
+      }
+
+      /* Table row animation */
+      .attendance-row {
+        animation: fadeInUp 0.5s ease-out backwards;
+      }
+      
+      .attendance-row:nth-child(1) { animation-delay: 0.05s; }
+      .attendance-row:nth-child(2) { animation-delay: 0.1s; }
+      .attendance-row:nth-child(3) { animation-delay: 0.15s; }
+      .attendance-row:nth-child(4) { animation-delay: 0.2s; }
+      .attendance-row:nth-child(5) { animation-delay: 0.25s; }
+      .attendance-row:nth-child(6) { animation-delay: 0.3s; }
+      .attendance-row:nth-child(7) { animation-delay: 0.35s; }
+      .attendance-row:nth-child(8) { animation-delay: 0.4s; }
+      .attendance-row:nth-child(9) { animation-delay: 0.45s; }
+      .attendance-row:nth-child(10) { animation-delay: 0.5s; }
+      .attendance-row:nth-child(11) { animation-delay: 0.55s; }
+      .attendance-row:nth-child(12) { animation-delay: 0.6s; }
+      .attendance-row:nth-child(13) { animation-delay: 0.65s; }
+      .attendance-row:nth-child(14) { animation-delay: 0.7s; }
+      .attendance-row:nth-child(15) { animation-delay: 0.75s; }
+      .attendance-row:nth-child(16) { animation-delay: 0.8s; }
+      .attendance-row:nth-child(17) { animation-delay: 0.85s; }
+      .attendance-row:nth-child(18) { animation-delay: 0.9s; }
+      .attendance-row:nth-child(19) { animation-delay: 0.95s; }
+      .attendance-row:nth-child(20) { animation-delay: 1.0s; }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Gender badge animation */
+      .gender-badge {
+        transition: all 0.2s ease;
+      }
+      .gender-badge:hover {
+        transform: scale(1.05);
+      }
+
+      /* Stats card animation */
+      .stats-card {
+        animation: scaleIn 0.5s ease-out backwards;
+      }
+      
+      .stats-card:nth-child(1) { animation-delay: 0.1s; }
+      .stats-card:nth-child(2) { animation-delay: 0.2s; }
+      .stats-card:nth-child(3) { animation-delay: 0.3s; }
+      .stats-card:nth-child(4) { animation-delay: 0.4s; }
+
+      @keyframes scaleIn {
+        from {
+          opacity: 0;
+          transform: scale(0.9);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      /* Pagination button animation */
+      .pagination-button {
+        transition: all 0.2s;
+      }
+      .pagination-button:hover:not(:disabled) {
+        transform: translateY(-2px);
       }
 
       @media (max-width: 768px) {
@@ -169,7 +243,7 @@
                 type="date"
                 name="start_date"
                 value="{{ $startDate }}"
-                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent"
+                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
               />
             </div>
 
@@ -180,7 +254,7 @@
                 type="date"
                 name="end_date"
                 value="{{ $endDate }}"
-                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent"
+                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
               />
             </div>
 
@@ -189,7 +263,7 @@
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Employee</label>
               <select
                 name="user_id"
-                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent"
+                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
               >
                 <option value="">All Employees</option>
                 @foreach($users as $user)
@@ -258,7 +332,7 @@
         <!-- Statistics Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <!-- Total Present -->
-          <div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 p-4">
+          <div class="stats-card bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 p-4">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Present</span>
               <span class="material-symbols-outlined text-green-600 dark:text-green-400">check_circle</span>
@@ -268,7 +342,7 @@
           </div>
 
           <!-- Total Late -->
-          <div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 p-4">
+          <div class="stats-card bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 p-4">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Late</span>
               <span class="material-symbols-outlined text-orange-600 dark:text-orange-400">schedule</span>
@@ -278,7 +352,7 @@
           </div>
 
           <!-- Total Absent -->
-          <div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 p-4">
+          <div class="stats-card bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 p-4">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Absent</span>
               <span class="material-symbols-outlined text-red-600 dark:text-red-400">cancel</span>
@@ -288,7 +362,7 @@
           </div>
 
           <!-- Total Hours -->
-          <div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 p-4">
+          <div class="stats-card bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 p-4">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Total Hours</span>
               <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">timer</span>
@@ -386,7 +460,7 @@
       <div>
         <h3 class="text-lg font-bold text-gray-900 dark:text-white">Detailed Attendance Records</h3>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          {{ $attendances->count() }} total records
+          Showing {{ $attendances->firstItem() ?? 0 }} to {{ $attendances->lastItem() ?? 0 }} of {{ $attendances->total() }} records
         </p>
       </div>
 
@@ -416,6 +490,7 @@
       <thead class="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
         <tr>
           <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Employee</th>
+          <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Gender</th>
           <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Date</th>
           <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Morning</th>
           <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Afternoon</th>
@@ -427,7 +502,7 @@
 
       <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
         @forelse($attendances as $attendance)
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <tr class="attendance-row hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
 
             <!-- Employee -->
             <td class="py-4 px-6">
@@ -437,6 +512,16 @@
               <p class="text-xs text-gray-500 dark:text-gray-400">
                 {{ $attendance->user->email }}
               </p>
+            </td>
+
+            <!-- Gender -->
+            <td class="py-4 px-6">
+              <span class="gender-badge inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium {{ $attendance->user->gender === 'male' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400' }}">
+                <span class="material-symbols-outlined text-base">
+                  {{ $attendance->user->gender === 'male' ? 'male' : 'female' }}
+                </span>
+                {{ ucfirst($attendance->user->gender ?? 'N/A') }}
+              </span>
             </td>
 
             <!-- Date -->
@@ -514,7 +599,7 @@
           </tr>
         @empty
           <tr>
-            <td colspan="7" class="py-12 text-center">
+            <td colspan="8" class="py-12 text-center">
               <div class="flex flex-col items-center gap-3">
                 <span class="material-symbols-outlined text-5xl text-gray-300">
                   search_off
@@ -529,6 +614,65 @@
       </tbody>
     </table>
   </div>
+
+  <!-- Pagination -->
+  @if($attendances->hasPages())
+    <div class="p-4 border-t border-gray-100 dark:border-gray-800 no-print">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <!-- Results Info -->
+        <div class="text-sm text-gray-600 dark:text-gray-400">
+          Showing <span class="font-semibold text-gray-900 dark:text-white">{{ $attendances->firstItem() }}</span> to 
+          <span class="font-semibold text-gray-900 dark:text-white">{{ $attendances->lastItem() }}</span> of 
+          <span class="font-semibold text-gray-900 dark:text-white">{{ $attendances->total() }}</span> results
+        </div>
+
+        <!-- Pagination Buttons -->
+        <div class="flex items-center gap-2">
+          {{-- Previous Button --}}
+          @if ($attendances->onFirstPage())
+            <button disabled class="pagination-button px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-400 cursor-not-allowed">
+              <span class="material-symbols-outlined text-lg">chevron_left</span>
+            </button>
+          @else
+            <a href="{{ $attendances->previousPageUrl() }}" class="pagination-button px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+              <span class="material-symbols-outlined text-lg">chevron_left</span>
+            </a>
+          @endif
+
+          {{-- Page Numbers --}}
+          <div class="hidden sm:flex items-center gap-2">
+            @foreach ($attendances->getUrlRange(max(1, $attendances->currentPage() - 2), min($attendances->lastPage(), $attendances->currentPage() + 2)) as $page => $url)
+              @if ($page == $attendances->currentPage())
+                <button class="pagination-button px-4 py-2 rounded-lg bg-primary text-white font-medium shadow-sm">
+                  {{ $page }}
+                </button>
+              @else
+                <a href="{{ $url }}" class="pagination-button px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  {{ $page }}
+                </a>
+              @endif
+            @endforeach
+          </div>
+
+          {{-- Mobile: Current Page Display --}}
+          <div class="sm:hidden px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            Page {{ $attendances->currentPage() }} of {{ $attendances->lastPage() }}
+          </div>
+
+          {{-- Next Button --}}
+          @if ($attendances->hasMorePages())
+            <a href="{{ $attendances->nextPageUrl() }}" class="pagination-button px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+              <span class="material-symbols-outlined text-lg">chevron_right</span>
+            </a>
+          @else
+            <button disabled class="pagination-button px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-400 cursor-not-allowed">
+              <span class="material-symbols-outlined text-lg">chevron_right</span>
+            </button>
+          @endif
+        </div>
+      </div>
+    </div>
+  @endif
 </div>
 
       </main>
@@ -625,11 +769,11 @@
         });
       }
 
-      // Export to CSV with morning/afternoon session data
+      // Export to CSV with morning/afternoon session data and gender
       function exportToCSV() {
-        const attendances = @json($attendances);
+        const attendances = @json($attendances->items());
         
-        let csv = 'Employee,Email,Day,Date,Morning In,Morning Out,Afternoon In,Afternoon Out,Total Hours,Morning Hours,Afternoon Hours,Status\n';
+        let csv = 'Employee,Email,Gender,Day,Date,Morning In,Morning Out,Afternoon In,Afternoon Out,Total Hours,Morning Hours,Afternoon Hours,Status\n';
         
         attendances.forEach(att => {
           // Parse the date properly
@@ -648,6 +792,7 @@
           
           csv += `"${att.user.name}",`;
           csv += `"${att.user.email}",`;
+          csv += `"${att.user.gender || 'N/A'}",`;
           csv += `"${dayName}",`;
           csv += `"${dateFormatted}",`;
           csv += `"${formatTime(att.morning_check_in)}",`;

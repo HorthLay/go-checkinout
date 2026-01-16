@@ -9,6 +9,7 @@ use App\Models\OfficeLocation;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class AdminController extends Controller
 {
@@ -239,102 +240,114 @@ class AdminController extends Controller
                        ->with('success', 'Location deleted successfully!');
     }
 
- public function report(Request $request)
-    {
-        // Get filter parameters
-        $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
-        $userId = $request->input('user_id');
-        
-        // Build query for attendances
-        $query = Attendance::with(['user'])
-                          ->whereBetween('attendance_date', [$startDate, $endDate]);
-        
-        if ($userId) {
-            $query->where('user_id', $userId);
-        }
-        
-        $attendances = $query->get();
-        
-        // Calculate session completion statistics
-        $morningComplete = $attendances->filter(function($a) {
-            return $a->isMorningSessionComplete();
-        })->count();
-        
-        $afternoonComplete = $attendances->filter(function($a) {
-            return $a->isAfternoonSessionComplete();
-        })->count();
-        
-        $fullDayComplete = $attendances->filter(function($a) {
-            return $a->isFullDayComplete();
-        })->count();
-        
-        // Calculate statistics
-        $stats = [
-            'total_present' => $attendances->whereIn('status', ['on_time', 'late'])->count(),
-            'total_late' => $attendances->where('status', 'late')->count(),
-            'total_absent' => $attendances->where('status', 'absent')->count(),
-            'total_leave' => $attendances->where('status', 'leave')->count(),
-            'total_hours' => $attendances->sum('work_hours'),
-            'avg_hours' => $attendances->avg('work_hours'),
-            'morning_sessions_complete' => $morningComplete,
-            'afternoon_sessions_complete' => $afternoonComplete,
-            'full_days_complete' => $fullDayComplete,
-            'total_morning_hours' => $attendances->sum('morning_work_hours'),
-            'total_afternoon_hours' => $attendances->sum('afternoon_work_hours'),
-        ];
-        
-        // Get top 5 users by work hours
-        $topUsers = User::where('role_type', 'user')
-                       ->withSum(['attendances as total_hours' => function($query) use ($startDate, $endDate) {
-                           $query->whereBetween('attendance_date', [$startDate, $endDate]);
-                       }], 'work_hours')
-                       ->withCount(['attendances as total_days' => function($query) use ($startDate, $endDate) {
-                           $query->whereBetween('attendance_date', [$startDate, $endDate])
-                                 ->whereIn('status', ['on_time', 'late']);
-                       }])
-                       ->having('total_hours', '>', 0)
-                       ->orderByDesc('total_hours')
-                       ->take(5)
-                       ->get();
-        
-        // Daily attendance summary with day of week
-        $dailySummary = $attendances->groupBy(function($item) {
-            return $item->attendance_date->format('Y-m-d');
-        })->map(function($dayAttendances) {
-            $date = $dayAttendances->first()->attendance_date;
-            return [
-                'date' => $date,
-                'day_name' => $date->format('l'), // Day of week (Monday, Tuesday, etc.)
-                'day_name_short' => $date->format('D'), // Short day (Mon, Tue, etc.)
-                'present' => $dayAttendances->whereIn('status', ['on_time', 'late'])->count(),
-                'late' => $dayAttendances->where('status', 'late')->count(),
-                'absent' => $dayAttendances->where('status', 'absent')->count(),
-                'leave' => $dayAttendances->where('status', 'leave')->count(),
-                'total_hours' => $dayAttendances->sum('work_hours'),
-                'morning_hours' => $dayAttendances->sum('morning_work_hours'),
-                'afternoon_hours' => $dayAttendances->sum('afternoon_work_hours'),
-            ];
-        })->values();
-        
-        // Get all users for filter
-        $users = User::where('role_type', 'user')->orderBy('name')->get();
-        
-        // Get office locations
-        $locations = OfficeLocation::all();
-        
-        return view('admin.report', compact(
-            'attendances',
-            'stats',
-            'topUsers',
-            'dailySummary',
-            'users',
-            'locations',
-            'startDate',
-            'endDate',
-            'userId'
-        ));
+    public function report(Request $request)
+{
+    // Get filter parameters
+    $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
+    $endDate = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
+    $userId = $request->input('user_id');
+    
+    // Build query for attendances with pagination
+    $query = Attendance::with(['user'])
+                      ->whereBetween('attendance_date', [$startDate, $endDate]);
+    
+    if ($userId) {
+        $query->where('user_id', $userId);
     }
+    
+    // Get paginated attendances (20 per page)
+    $attendances = $query->orderBy('attendance_date', 'desc')
+                        ->orderBy('user_id')
+                        ->paginate(20)
+                        ->appends($request->all());
+    
+    // For statistics, get all records (not paginated)
+    $allAttendances = Attendance::with(['user'])
+                      ->whereBetween('attendance_date', [$startDate, $endDate])
+                      ->when($userId, function($q) use ($userId) {
+                          $q->where('user_id', $userId);
+                      })
+                      ->get();
+    
+    // Calculate session completion statistics
+    $morningComplete = $allAttendances->filter(function($a) {
+        return $a->isMorningSessionComplete();
+    })->count();
+    
+    $afternoonComplete = $allAttendances->filter(function($a) {
+        return $a->isAfternoonSessionComplete();
+    })->count();
+    
+    $fullDayComplete = $allAttendances->filter(function($a) {
+        return $a->isFullDayComplete();
+    })->count();
+    
+    // Calculate statistics
+    $stats = [
+        'total_present' => $allAttendances->whereIn('status', ['on_time', 'late'])->count(),
+        'total_late' => $allAttendances->where('status', 'late')->count(),
+        'total_absent' => $allAttendances->where('status', 'absent')->count(),
+        'total_leave' => $allAttendances->where('status', 'leave')->count(),
+        'total_hours' => $allAttendances->sum('work_hours'),
+        'avg_hours' => $allAttendances->avg('work_hours'),
+        'morning_sessions_complete' => $morningComplete,
+        'afternoon_sessions_complete' => $afternoonComplete,
+        'full_days_complete' => $fullDayComplete,
+        'total_morning_hours' => $allAttendances->sum('morning_work_hours'),
+        'total_afternoon_hours' => $allAttendances->sum('afternoon_work_hours'),
+    ];
+    
+    // Get top 5 users by work hours
+    $topUsers = User::where('role_type', 'user')
+                   ->withSum(['attendances as total_hours' => function($query) use ($startDate, $endDate) {
+                       $query->whereBetween('attendance_date', [$startDate, $endDate]);
+                   }], 'work_hours')
+                   ->withCount(['attendances as total_days' => function($query) use ($startDate, $endDate) {
+                       $query->whereBetween('attendance_date', [$startDate, $endDate])
+                             ->whereIn('status', ['on_time', 'late']);
+                   }])
+                   ->having('total_hours', '>', 0)
+                   ->orderByDesc('total_hours')
+                   ->take(5)
+                   ->get();
+    
+    // Daily attendance summary with day of week
+    $dailySummary = $allAttendances->groupBy(function($item) {
+        return $item->attendance_date->format('Y-m-d');
+    })->map(function($dayAttendances) {
+        $date = $dayAttendances->first()->attendance_date;
+        return [
+            'date' => $date,
+            'day_name' => $date->format('l'), // Day of week (Monday, Tuesday, etc.)
+            'day_name_short' => $date->format('D'), // Short day (Mon, Tue, etc.)
+            'present' => $dayAttendances->whereIn('status', ['on_time', 'late'])->count(),
+            'late' => $dayAttendances->where('status', 'late')->count(),
+            'absent' => $dayAttendances->where('status', 'absent')->count(),
+            'leave' => $dayAttendances->where('status', 'leave')->count(),
+            'total_hours' => $dayAttendances->sum('work_hours'),
+            'morning_hours' => $dayAttendances->sum('morning_work_hours'),
+            'afternoon_hours' => $dayAttendances->sum('afternoon_work_hours'),
+        ];
+    })->values();
+    
+    // Get all users for filter
+    $users = User::where('role_type', 'user')->orderBy('name')->get();
+    
+    // Get office locations
+    $locations = OfficeLocation::all();
+    
+    return view('admin.report', compact(
+        'attendances',
+        'stats',
+        'topUsers',
+        'dailySummary',
+        'users',
+        'locations',
+        'startDate',
+        'endDate',
+        'userId'
+    ));
+}
 
     public function reportPrint(Request $request)
     {
@@ -488,6 +501,9 @@ class AdminController extends Controller
 
 // notification
 
+/**
+ * Display notifications with filters
+ */
 public function notifications(Request $request)
 {
     $query = Notification::where('user_id', Auth::id());
@@ -524,6 +540,7 @@ public function notifications(Request $request)
         $query->whereDate('created_at', '<=', $request->date_to);
     }
 
+    // Get paginated notifications
     $notifications = $query->orderBy('created_at', 'desc')
                           ->paginate(20)
                           ->withQueryString();
@@ -537,7 +554,7 @@ public function notifications(Request $request)
                               ->count(),
     ];
 
-    // Notification types count
+    // Notification types count (optional, if needed in view)
     $typeStats = Notification::where('user_id', Auth::id())
                             ->selectRaw('type, count(*) as count')
                             ->groupBy('type')
@@ -548,7 +565,7 @@ public function notifications(Request $request)
 }
 
 /**
- * Mark notification as read
+ * Mark single notification as read
  */
 public function markNotificationRead($id)
 {
@@ -563,36 +580,66 @@ public function markNotificationRead($id)
  */
 public function markAllNotificationsRead()
 {
-    Notification::where('user_id', Auth::id())
-               ->unread()
-               ->update([
-                   'is_read' => true,
-                   'read_at' => now(),
-               ]);
+    $updatedCount = Notification::where('user_id', Auth::id())
+                                ->unread()
+                                ->update([
+                                    'is_read' => true,
+                                    'read_at' => now(),
+                                ]);
     
-    return back()->with('success', 'All notifications marked as read');
+    if ($updatedCount > 0) {
+        return back()->with('success', "Successfully marked {$updatedCount} notification(s) as read");
+    }
+    
+    return back()->with('success', 'No unread notifications to mark');
 }
 
 /**
- * Delete notification
+ * Delete single notification
  */
 public function deleteNotification($id)
 {
     $notification = Notification::where('user_id', Auth::id())->findOrFail($id);
     $notification->delete();
     
-    return back()->with('success', 'Notification deleted');
+    return back()->with('success', 'Notification deleted successfully');
 }
 
 /**
  * Delete all read notifications
  */
+/**
+ * Delete all read notifications
+ */
 public function deleteAllReadNotifications()
 {
-    Notification::where('user_id', Auth::id())
-               ->read()
-               ->delete();
-    
-    return back()->with('success', 'All read notifications deleted');
+    try {
+        // Get the count first
+        $readNotifications = Notification::where('user_id', Auth::id())
+                                        ->where('is_read', true)
+                                        ->get();
+        
+        $count = $readNotifications->count();
+        
+        if ($count === 0) {
+            return back()->with('error', 'No read notifications to delete');
+        }
+        
+        // Delete them
+        Notification::where('user_id', Auth::id())
+                   ->where('is_read', true)
+                   ->delete();
+        
+        return back()->with('success', "Successfully deleted {$count} read notification(s)");
+        
+    } catch (\Exception $e) {
+        Log::error('Delete All Read Notifications Error', [
+            'user_id' => Auth::id(),
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return back()->with('error', 'Failed to delete notifications. Please try again.');
+    }
 }
 }
