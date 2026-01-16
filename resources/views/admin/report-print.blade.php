@@ -1,9 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Attendance Report - Attendify</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    
+    <!-- Inter font for English -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    />
+    
+    <!-- Noto Sans Khmer font -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;500;600;700;800&display=swap"
+    />
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
       @page {
@@ -16,6 +31,12 @@
           margin: 0;
           padding: 0;
         }
+        
+        /* Ensure Khmer prints correctly */
+        * {
+          font-family: "Inter", "Noto Sans Khmer", sans-serif !important;
+        }
+        
         .no-print {
           display: none !important;
         }
@@ -31,9 +52,20 @@
       }
 
       body {
-        font-family: "Inter", Arial, sans-serif;
+        font-family: "Inter", "Noto Sans Khmer", sans-serif;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+      }
+      
+      /* Khmer text styling */
+      .khmer-text {
+        font-family: "Noto Sans Khmer", sans-serif;
+        line-height: 1.8;
+      }
+      
+      /* Mixed content (English + Khmer) */
+      .mixed-text {
+        font-family: "Inter", "Noto Sans Khmer", sans-serif;
       }
 
       .page {
@@ -89,7 +121,7 @@
         color: #be185d;
       }
     </style>
-  </head>
+</head>
   <body>
     <div class="page">
       <!-- Header Section -->

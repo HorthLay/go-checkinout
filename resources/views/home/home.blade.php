@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html class="light" lang="en">
-  <head>
+<head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Attendance Log - Attendify</title>
     <link href="https://fonts.googleapis.com" rel="preconnect" />
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    
+    <!-- Inter font for English -->
     <link
       rel="preload"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
@@ -18,6 +20,22 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       />
     </noscript>
+    
+    <!-- Noto Sans Khmer font -->
+    <link
+      rel="preload"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;500;600;700;800&display=swap"
+      as="style"
+      onload="this.onload=null;this.rel='stylesheet'"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;500;600;700;800&display=swap"
+      />
+    </noscript>
+    
+    <!-- Material Symbols -->
     <link
       rel="preload"
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
@@ -30,6 +48,7 @@
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
       />
     </noscript>
+    
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script id="tailwind-config">
       tailwind.config = {
@@ -45,7 +64,9 @@
               "surface-dark": "#1e2430",
             },
             fontFamily: {
-              display: ["Inter", "sans-serif"],
+              display: ["Inter", "Noto Sans Khmer", "sans-serif"],
+              khmer: ["Noto Sans Khmer", "sans-serif"],
+              inter: ["Inter", "sans-serif"],
             },
           },
         },
@@ -53,8 +74,20 @@
     </script>
     <style>
       body {
-        font-family: "Inter", sans-serif";
+        font-family: "Inter", "Noto Sans Khmer", sans-serif;
       }
+      
+      /* Khmer text styling */
+      .khmer-text {
+        font-family: "Noto Sans Khmer", sans-serif;
+        line-height: 1.8;
+      }
+      
+      /* Mixed content (English + Khmer) */
+      .mixed-text {
+        font-family: "Inter", "Noto Sans Khmer", sans-serif;
+      }
+      
       .no-scrollbar::-webkit-scrollbar {
         display: none;
       }
@@ -83,7 +116,7 @@
       }
     </style>
     @livewireStyles
-  </head>
+</head>
   <body
     class="bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 font-display flex h-screen overflow-hidden"
   >
