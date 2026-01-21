@@ -144,9 +144,7 @@
       <!-- Header -->
       <header class="h-16 md:h-20 flex items-center justify-between px-4 md:px-6 lg:px-10 bg-surface-light dark:bg-surface-dark border-b border-gray-100 dark:border-gray-800 shrink-0 z-10">
         <div class="flex items-center gap-3 lg:hidden">
-          <button id="menu-toggle" aria-label="Toggle menu" class="text-gray-500 hover:text-gray-900 dark:hover:text-white p-2">
-            <span class="material-symbols-outlined">menu</span>
-          </button>
+       
           <span class="font-bold text-base md:text-lg">Employee Details</span>
         </div>
         <div class="hidden lg:block">
@@ -215,7 +213,7 @@
                     </div>
                   </div>
 
-                  <div class="flex items-center gap-3 text-sm">
+                  {{-- <div class="flex items-center gap-3 text-sm">
                     <div class="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <span class="material-symbols-outlined text-gray-400">
                         {{ $employee->gender === 'male' ? 'male' : 'female' }}
@@ -225,7 +223,7 @@
                       <p class="text-xs text-gray-500 dark:text-gray-400">Gender</p>
                       <p class="text-sm font-medium text-gray-900 dark:text-white">{{ ucfirst($employee->gender ?? 'N/A') }}</p>
                     </div>
-                  </div>
+                  </div> --}}
 
                   <div class="flex items-center gap-3 text-sm">
                     <div class="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -286,7 +284,7 @@
                   <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phone Number</label>
                   <p class="text-sm font-medium text-gray-900 dark:text-white mt-1">{{ $employee->phone ?? 'Not provided' }}</p>
                 </div>
-                <div>
+                {{-- <div>
                   <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Gender</label>
                   <p class="text-sm font-medium mt-1">
                     <span class="gender-badge inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium {{ $employee->gender === 'male' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400' }}">
@@ -296,7 +294,7 @@
                       {{ ucfirst($employee->gender ?? 'N/A') }}
                     </span>
                   </p>
-                </div>
+                </div> --}}
                 <div>
                   <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">User Role</label>
                   <p class="text-sm font-medium text-gray-900 dark:text-white mt-1">{{ ucfirst($employee->role_type) }}</p>

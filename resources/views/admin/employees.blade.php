@@ -235,9 +235,7 @@
       <!-- Header -->
       <header class="h-16 md:h-20 flex items-center justify-between px-4 md:px-6 lg:px-10 bg-surface-light dark:bg-surface-dark border-b border-gray-100 dark:border-gray-800 shrink-0 z-10">
         <div class="flex items-center gap-3 lg:hidden">
-          <button id="menu-toggle" aria-label="Toggle menu" class="text-gray-500 hover:text-gray-900 dark:hover:text-white p-2">
-            <span class="material-symbols-outlined">menu</span>
-          </button>
+        
           <span class="font-bold text-base md:text-lg">Employees</span>
         </div>
         <div class="hidden lg:block">
@@ -304,7 +302,7 @@
                 <tr>
                   <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Employee</th>
                   <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contact</th>
-                  <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Gender</th>
+                  {{-- <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Gender</th> --}}
                   <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th>
                   <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                   <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Joined</th>
@@ -333,14 +331,14 @@
                       <p class="text-sm text-gray-900 dark:text-white">{{ filled($employee->email) ? $employee->email : '----' }}</p>
                       <p class="text-xs text-gray-500 dark:text-gray-400">{{ $employee->phone ?? 'No phone' }}</p>
                     </td>
-                    <td class="py-4 px-6">
+                    {{-- <td class="py-4 px-6">
                       <span class="gender-badge inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium {{ $employee->gender === 'male' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400' }}">
                         <span class="material-symbols-outlined text-base">
                           {{ $employee->gender === 'male' ? 'male' : 'female' }}
                         </span>
                         {{ ucfirst($employee->gender ?? 'N/A') }}
                       </span>
-                    </td>
+                    </td> --}}
                     <td class="py-4 px-6">
                       <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium {{ $employee->role_type === 'admin' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' }}">
                         {{ ucfirst($employee->role_type) }}
@@ -420,10 +418,10 @@
               </div>
               
               <div class="flex items-center gap-4 mb-3 text-xs text-gray-500 dark:text-gray-400">
-                <span class="flex items-center gap-1">
+                {{-- <span class="flex items-center gap-1">
                   <span class="material-symbols-outlined text-base">{{ $employee->gender === 'male' ? 'male' : 'female' }}</span>
                   {{ ucfirst($employee->gender ?? 'N/A') }}
-                </span>
+                </span> --}}
                 <span class="flex items-center gap-1">
                   <span class="material-symbols-outlined text-base">badge</span>
                   {{ ucfirst($employee->role_type) }}
@@ -594,7 +592,7 @@
               <option value="admin">Admin</option>
             </select>
           </div>
-
+{{-- 
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Gender <span class="text-red-500">*</span>
@@ -603,7 +601,7 @@
               <option value="male">Male</option>
               <option value="female">Female</option>
             </select>
-          </div>
+          </div> --}}
           <div class="flex items-center gap-2">
             <input type="checkbox" name="active" id="active" value="1" checked class="rounded border-gray-300 text-primary focus:ring-primary">
             <label for="active" class="text-sm text-gray-700 dark:text-gray-300">Active Employee</label>

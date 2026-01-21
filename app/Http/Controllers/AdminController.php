@@ -8,6 +8,7 @@ use App\Models\Notification;
 use App\Models\OfficeLocation;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -247,42 +248,97 @@ class AdminController extends Controller
     $endDate = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
     $userId = $request->input('user_id');
     
-    // Build query for attendances with pagination
-    $query = Attendance::with(['user'])
-                      ->whereBetween('attendance_date', [$startDate, $endDate]);
+    // Get all users or specific user
+    $users = User::where('role_type', 'user')
+                 ->when($userId, function($q) use ($userId) {
+                     $q->where('id', $userId);
+                 })
+                 ->orderBy('name')
+                 ->get();
     
-    if ($userId) {
-        $query->where('user_id', $userId);
+    // Generate date range (only working days - Monday to Friday)
+    $dateRange = [];
+    $currentDate = Carbon::parse($startDate);
+    $endDateCarbon = Carbon::parse($endDate);
+    
+    while ($currentDate->lte($endDateCarbon)) {
+        // Only include Monday (1) to Friday (5)
+        $dayOfWeek = $currentDate->dayOfWeek;
+        if ($dayOfWeek >= Carbon::MONDAY && $dayOfWeek <= Carbon::FRIDAY) {
+            $dateRange[] = $currentDate->copy();
+        }
+        $currentDate->addDay();
     }
     
-    // Get paginated attendances (20 per page)
-    $attendances = $query->orderBy('attendance_date', 'desc')
-                        ->orderBy('user_id')
-                        ->paginate(20)
-                        ->appends($request->all());
+    // Get existing attendances
+    $existingAttendances = Attendance::with(['user'])
+                          ->whereBetween('attendance_date', [$startDate, $endDate])
+                          ->when($userId, function($q) use ($userId) {
+                              $q->where('user_id', $userId);
+                          })
+                          ->get()
+                          ->groupBy(function($item) {
+                              return $item->user_id . '_' . $item->attendance_date->format('Y-m-d');
+                          });
     
-    // For statistics, get all records (not paginated)
-    $allAttendances = Attendance::with(['user'])
-                      ->whereBetween('attendance_date', [$startDate, $endDate])
-                      ->when($userId, function($q) use ($userId) {
-                          $q->where('user_id', $userId);
-                      })
-                      ->get();
+    // Build complete attendance records (existing + missing)
+    $allAttendances = collect();
     
-    // Calculate session completion statistics
-    $morningComplete = $allAttendances->filter(function($a) {
-        return $a->isMorningSessionComplete();
-    })->count();
+    foreach ($users as $user) {
+        foreach ($dateRange as $date) {
+            $key = $user->id . '_' . $date->format('Y-m-d');
+            
+            if (isset($existingAttendances[$key])) {
+                // Use existing attendance
+                $attendance = $existingAttendances[$key]->first();
+                
+                // Mark as absent if no check-ins
+                if (is_null($attendance->morning_check_in) && 
+                    is_null($attendance->afternoon_check_in) && 
+                    $attendance->status !== 'leave') {
+                    $attendance->status = 'absent';
+                    if (empty($attendance->absent_note)) {
+                        $attendance->absent_note = 'No check-in recorded';
+                    }
+                }
+                
+                $allAttendances->push($attendance);
+            } else {
+                // Create virtual attendance record for missing data
+                $virtualAttendance = new Attendance([
+                    'user_id' => $user->id,
+                    'attendance_date' => $date,
+                    'status' => 'absent',
+                    'absent_note' => 'No attendance record',
+                    'work_hours' => 0,
+                ]);
+                $virtualAttendance->user = $user;
+                $virtualAttendance->exists = false; // Mark as virtual
+                
+                $allAttendances->push($virtualAttendance);
+            }
+        }
+    }
     
-    $afternoonComplete = $allAttendances->filter(function($a) {
-        return $a->isAfternoonSessionComplete();
-    })->count();
+    // Sort by date desc, then by user name
+    $allAttendances = $allAttendances->sortByDesc(function($item) {
+        return $item->attendance_date->format('Y-m-d');
+    })->sortBy(function($item) {
+        return $item->user->name;
+    });
     
-    $fullDayComplete = $allAttendances->filter(function($a) {
-        return $a->isFullDayComplete();
-    })->count();
+    // Paginate manually
+    $perPage = 20;
+    $currentPage = $request->input('page', 1);
+    $attendances = new \Illuminate\Pagination\LengthAwarePaginator(
+        $allAttendances->forPage($currentPage, $perPage),
+        $allAttendances->count(),
+        $perPage,
+        $currentPage,
+        ['path' => $request->url(), 'query' => $request->query()]
+    );
     
-    // Calculate statistics
+    // Calculate statistics from all records
     $stats = [
         'total_present' => $allAttendances->whereIn('status', ['on_time', 'late'])->count(),
         'total_late' => $allAttendances->where('status', 'late')->count(),
@@ -290,48 +346,49 @@ class AdminController extends Controller
         'total_leave' => $allAttendances->where('status', 'leave')->count(),
         'total_hours' => $allAttendances->sum('work_hours'),
         'avg_hours' => $allAttendances->avg('work_hours'),
-        'morning_sessions_complete' => $morningComplete,
-        'afternoon_sessions_complete' => $afternoonComplete,
-        'full_days_complete' => $fullDayComplete,
-        'total_morning_hours' => $allAttendances->sum('morning_work_hours'),
-        'total_afternoon_hours' => $allAttendances->sum('afternoon_work_hours'),
+        'total_morning_hours' => $allAttendances->sum(function($a) {
+            return $a->morning_work_hours ?? 0;
+        }),
+        'total_afternoon_hours' => $allAttendances->sum(function($a) {
+            return $a->afternoon_work_hours ?? 0;
+        }),
     ];
     
     // Get top 5 users by work hours
     $topUsers = User::where('role_type', 'user')
                    ->withSum(['attendances as total_hours' => function($query) use ($startDate, $endDate) {
-                       $query->whereBetween('attendance_date', [$startDate, $endDate]);
+                       $query->whereBetween('attendance_date', [$startDate, $endDate])
+                             ->whereRaw('DAYOFWEEK(attendance_date) BETWEEN 2 AND 6'); // Monday to Friday
                    }], 'work_hours')
                    ->withCount(['attendances as total_days' => function($query) use ($startDate, $endDate) {
                        $query->whereBetween('attendance_date', [$startDate, $endDate])
-                             ->whereIn('status', ['on_time', 'late']);
+                             ->whereIn('status', ['on_time', 'late'])
+                             ->whereRaw('DAYOFWEEK(attendance_date) BETWEEN 2 AND 6'); // Monday to Friday
                    }])
                    ->having('total_hours', '>', 0)
                    ->orderByDesc('total_hours')
                    ->take(5)
                    ->get();
     
-    // Daily attendance summary with day of week
+    // Daily attendance summary - FIXED: Format date as string and sort chronologically
     $dailySummary = $allAttendances->groupBy(function($item) {
         return $item->attendance_date->format('Y-m-d');
     })->map(function($dayAttendances) {
         $date = $dayAttendances->first()->attendance_date;
         return [
-            'date' => $date,
-            'day_name' => $date->format('l'), // Day of week (Monday, Tuesday, etc.)
-            'day_name_short' => $date->format('D'), // Short day (Mon, Tue, etc.)
+            'date' => $date->format('Y-m-d'), // Format as string for JavaScript
+            'day_name' => $date->format('l'),
+            'day_name_short' => $date->format('D'),
             'present' => $dayAttendances->whereIn('status', ['on_time', 'late'])->count(),
             'late' => $dayAttendances->where('status', 'late')->count(),
             'absent' => $dayAttendances->where('status', 'absent')->count(),
             'leave' => $dayAttendances->where('status', 'leave')->count(),
             'total_hours' => $dayAttendances->sum('work_hours'),
-            'morning_hours' => $dayAttendances->sum('morning_work_hours'),
-            'afternoon_hours' => $dayAttendances->sum('afternoon_work_hours'),
         ];
-    })->values();
+    })->sortBy('date')->values(); // Sort chronologically
     
-    // Get all users for filter
-    $users = User::where('role_type', 'user')->orderBy('name')->get();
+    // Get all users for filter dropdown
+    $allUsers = User::where('role_type', 'user')->orderBy('name')->get();
     
     // Get office locations
     $locations = OfficeLocation::all();
@@ -341,102 +398,212 @@ class AdminController extends Controller
         'stats',
         'topUsers',
         'dailySummary',
-        'users',
+        'allUsers',
         'locations',
         'startDate',
         'endDate',
         'userId'
     ));
 }
-
-    public function reportPrint(Request $request)
-    {
-        // Get filter parameters
-        $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
-        $userId = $request->input('user_id');
-        
-        // Build query for attendances
-        $query = Attendance::with(['user'])
-                          ->whereBetween('attendance_date', [$startDate, $endDate]);
-        
-        if ($userId) {
-            $query->where('user_id', $userId);
+public function reportPrint(Request $request)
+{
+    // Get filter parameters
+    $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
+    $endDate = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
+    $userId = $request->input('user_id');
+    
+    // Get all users or specific user
+    $users = User::where('role_type', 'user')
+                 ->when($userId, function($q) use ($userId) {
+                     $q->where('id', $userId);
+                 })
+                 ->orderBy('name')
+                 ->get();
+    
+    // Generate date range (only Monday to Friday)
+    $dateRange = [];
+    $currentDate = Carbon::parse($startDate);
+    $endDateCarbon = Carbon::parse($endDate);
+    
+    while ($currentDate->lte($endDateCarbon)) {
+        // Only include Monday (1) to Friday (5)
+        $dayOfWeek = $currentDate->dayOfWeek;
+        if ($dayOfWeek >= Carbon::MONDAY && $dayOfWeek <= Carbon::FRIDAY) {
+            $dateRange[] = $currentDate->copy();
         }
-        
-        $attendances = $query->orderBy('attendance_date', 'asc')->get();
-        
-        // Calculate session completion statistics
-        $morningComplete = $attendances->filter(function($a) {
-            return $a->isMorningSessionComplete();
-        })->count();
-        
-        $afternoonComplete = $attendances->filter(function($a) {
-            return $a->isAfternoonSessionComplete();
-        })->count();
-        
-        $fullDayComplete = $attendances->filter(function($a) {
-            return $a->isFullDayComplete();
-        })->count();
-        
-        // Calculate statistics
-        $stats = [
-            'total_present' => $attendances->whereIn('status', ['on_time', 'late'])->count(),
-            'total_late' => $attendances->where('status', 'late')->count(),
-            'total_absent' => $attendances->where('status', 'absent')->count(),
-            'total_leave' => $attendances->where('status', 'leave')->count(),
-            'total_hours' => $attendances->sum('work_hours'),
-            'avg_hours' => $attendances->avg('work_hours'),
-            'morning_sessions_complete' => $morningComplete,
-            'afternoon_sessions_complete' => $afternoonComplete,
-            'full_days_complete' => $fullDayComplete,
-            'total_morning_hours' => $attendances->sum('morning_work_hours'),
-            'total_afternoon_hours' => $attendances->sum('afternoon_work_hours'),
-        ];
-        
-        // Get top 5 users by work hours
-        $topUsers = User::where('role_type', 'user')
-                       ->withSum(['attendances as total_hours' => function($query) use ($startDate, $endDate) {
-                           $query->whereBetween('attendance_date', [$startDate, $endDate]);
-                       }], 'work_hours')
-                       ->withCount(['attendances as total_days' => function($query) use ($startDate, $endDate) {
-                           $query->whereBetween('attendance_date', [$startDate, $endDate])
-                                 ->whereIn('status', ['on_time', 'late']);
-                       }])
-                       ->having('total_hours', '>', 0)
-                       ->orderByDesc('total_hours')
-                       ->take(5)
-                       ->get();
-        
-        return view('admin.report-print', compact(
-            'attendances',
-            'stats',
-            'topUsers',
-            'startDate',
-            'endDate',
-            'userId'
-        ));
+        $currentDate->addDay();
     }
+    
+    // Get existing attendances
+    $existingAttendances = Attendance::with(['user'])
+                          ->whereBetween('attendance_date', [$startDate, $endDate])
+                          ->when($userId, function($q) use ($userId) {
+                              $q->where('user_id', $userId);
+                          })
+                          ->get()
+                          ->groupBy(function($item) {
+                              return $item->user_id . '_' . $item->attendance_date->format('Y-m-d');
+                          });
+    
+    // Build complete attendance records
+    $attendances = collect();
+    
+    foreach ($users as $user) {
+        foreach ($dateRange as $date) {
+            $key = $user->id . '_' . $date->format('Y-m-d');
+            
+            if (isset($existingAttendances[$key])) {
+                $attendance = $existingAttendances[$key]->first();
+                
+                if (is_null($attendance->morning_check_in) && 
+                    is_null($attendance->afternoon_check_in) && 
+                    $attendance->status !== 'leave') {
+                    $attendance->status = 'absent';
+                    if (empty($attendance->absent_note)) {
+                        $attendance->absent_note = 'No check-in recorded';
+                    }
+                }
+                
+                $attendances->push($attendance);
+            } else {
+                $virtualAttendance = new Attendance([
+                    'user_id' => $user->id,
+                    'attendance_date' => $date,
+                    'status' => 'absent',
+                    'absent_note' => 'No attendance record',
+                    'work_hours' => 0,
+                ]);
+                $virtualAttendance->user = $user;
+                
+                $attendances->push($virtualAttendance);
+            }
+        }
+    }
+    
+    // Sort by date asc, then by user name
+    $attendances = $attendances->sortBy(function($item) {
+        return $item->attendance_date->format('Y-m-d');
+    })->sortBy(function($item) {
+        return $item->user->name;
+    });
+    
+    // Calculate statistics
+    $stats = [
+        'total_present' => $attendances->whereIn('status', ['on_time', 'late'])->count(),
+        'total_late' => $attendances->where('status', 'late')->count(),
+        'total_absent' => $attendances->where('status', 'absent')->count(),
+        'total_leave' => $attendances->where('status', 'leave')->count(),
+        'total_hours' => $attendances->sum('work_hours'),
+        'avg_hours' => $attendances->avg('work_hours'),
+    ];
+    
+    // Get top 5 users
+    $topUsers = User::where('role_type', 'user')
+                   ->withSum(['attendances as total_hours' => function($query) use ($startDate, $endDate) {
+                       $query->whereBetween('attendance_date', [$startDate, $endDate])
+                             ->whereRaw('DAYOFWEEK(attendance_date) BETWEEN 2 AND 6');
+                   }], 'work_hours')
+                   ->withCount(['attendances as total_days' => function($query) use ($startDate, $endDate) {
+                       $query->whereBetween('attendance_date', [$startDate, $endDate])
+                             ->whereIn('status', ['on_time', 'late'])
+                             ->whereRaw('DAYOFWEEK(attendance_date) BETWEEN 2 AND 6');
+                   }])
+                   ->having('total_hours', '>', 0)
+                   ->orderByDesc('total_hours')
+                   ->take(5)
+                   ->get();
+    
+    return view('admin.report-print', compact(
+        'attendances',
+        'stats',
+        'topUsers',
+        'startDate',
+        'endDate',
+        'userId'
+    ));
+}
 
-
-
-    public function exportCSV(Request $request)
+public function exportCSV(Request $request)
 {
     // Get filter parameters
     $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
     $endDate   = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
     $userId    = $request->input('user_id');
 
-    // Build query
-    $query = Attendance::with(['user'])
-        ->whereBetween('attendance_date', [$startDate, $endDate])
-        ->orderBy('attendance_date', 'asc');
-
-    if ($userId) {
-        $query->where('user_id', $userId);
+    // Get all users or specific user
+    $users = User::where('role_type', 'user')
+                 ->when($userId, function($q) use ($userId) {
+                     $q->where('id', $userId);
+                 })
+                 ->orderBy('name')
+                 ->get();
+    
+    // Generate date range (only Monday to Friday)
+    $dateRange = [];
+    $currentDate = Carbon::parse($startDate);
+    $endDateCarbon = Carbon::parse($endDate);
+    
+    while ($currentDate->lte($endDateCarbon)) {
+        // Only include Monday (1) to Friday (5)
+        $dayOfWeek = $currentDate->dayOfWeek;
+        if ($dayOfWeek >= Carbon::MONDAY && $dayOfWeek <= Carbon::FRIDAY) {
+            $dateRange[] = $currentDate->copy();
+        }
+        $currentDate->addDay();
     }
-
-    $attendances = $query->get();
+    
+    // Get existing attendances
+    $existingAttendances = Attendance::with(['user'])
+                          ->whereBetween('attendance_date', [$startDate, $endDate])
+                          ->when($userId, function($q) use ($userId) {
+                              $q->where('user_id', $userId);
+                          })
+                          ->get()
+                          ->groupBy(function($item) {
+                              return $item->user_id . '_' . $item->attendance_date->format('Y-m-d');
+                          });
+    
+    // Build complete attendance records
+    $attendances = collect();
+    
+    foreach ($users as $user) {
+        foreach ($dateRange as $date) {
+            $key = $user->id . '_' . $date->format('Y-m-d');
+            
+            if (isset($existingAttendances[$key])) {
+                $attendance = $existingAttendances[$key]->first();
+                
+                if (is_null($attendance->morning_check_in) && 
+                    is_null($attendance->afternoon_check_in) && 
+                    $attendance->status !== 'leave') {
+                    $attendance->status = 'absent';
+                    if (empty($attendance->absent_note)) {
+                        $attendance->absent_note = 'No check-in recorded';
+                    }
+                }
+                
+                $attendances->push($attendance);
+            } else {
+                $virtualAttendance = new Attendance([
+                    'user_id' => $user->id,
+                    'attendance_date' => $date,
+                    'status' => 'absent',
+                    'absent_note' => 'No attendance record',
+                    'work_hours' => 0,
+                ]);
+                $virtualAttendance->user = $user;
+                
+                $attendances->push($virtualAttendance);
+            }
+        }
+    }
+    
+    // Sort by user name, then by date
+    $attendances = $attendances->sortBy(function($item) {
+        return $item->user->name;
+    })->sortBy(function($item) {
+        return $item->attendance_date->format('Y-m-d');
+    });
 
     // Filename
     $filename = 'attendance-report-' . now()->format('Y-m-d-His') . '.csv';
@@ -461,6 +628,7 @@ class AdminController extends Controller
         fputcsv($file, [
             'Employee',
             'Email',
+            // 'Gender',
             'Day',
             'Date',
             'Morning Check-In',
@@ -472,13 +640,24 @@ class AdminController extends Controller
             'Afternoon Hours',
             'Status',
             'Absent Note',
+            'Note',
         ]);
 
         // CSV Rows
         foreach ($attendances as $attendance) {
+            // Get morning/afternoon hours
+            $morningHours = 0;
+            $afternoonHours = 0;
+            
+            if (method_exists($attendance, 'getMorningWorkHoursAttribute')) {
+                $morningHours = $attendance->morning_work_hours ?? 0;
+                $afternoonHours = $attendance->afternoon_work_hours ?? 0;
+            }
+            
             fputcsv($file, [
                 $attendance->user->name,
                 $attendance->user->email,
+                // ucfirst($attendance->user->gender ?? 'N/A'),
                 $attendance->attendance_date->format('l'),
                 $attendance->attendance_date->format('Y-m-d'),
                 $attendance->morning_check_in ? $attendance->morning_check_in->format('H:i:s') : '-',
@@ -486,10 +665,11 @@ class AdminController extends Controller
                 $attendance->afternoon_check_in ? $attendance->afternoon_check_in->format('H:i:s') : '-',
                 $attendance->afternoon_check_out ? $attendance->afternoon_check_out->format('H:i:s') : '-',
                 $attendance->work_hours ?? '0',
-                $attendance->morning_work_hours ?? '0',
-                $attendance->afternoon_work_hours ?? '0',
+                $morningHours,
+                $afternoonHours,
                 ucfirst(str_replace('_', ' ', $attendance->status)),
-                $attendance->status === 'absent' ? $attendance->absent_note : '',
+                $attendance->absent_note ?? '',
+                $attendance->note ?? '',
             ]);
         }
 
@@ -498,7 +678,6 @@ class AdminController extends Controller
 
     return response()->stream($callback, 200, $headers);
 }
-
 // notification
 
 /**

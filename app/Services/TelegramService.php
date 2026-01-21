@@ -57,6 +57,12 @@ class TelegramService
         // Get check-in time based on session
         $checkInTime = $session === 'morning' ? $attendance->morning_check_in : $attendance->afternoon_check_in;
         
+        // Check if this is a time violation (note contains time violation marker)
+        $hasTimeViolation = $attendance->note && (
+            str_contains($attendance->note, 'Late check-in at') || 
+            str_contains($attendance->note, 'Early check-out at')
+        );
+        
         // Get day of week in both languages
         $dayEn = now()->format('l');
         $dayKh = $this->getDayInKhmer(now()->dayOfWeek);
@@ -76,6 +82,14 @@ class TelegramService
         $message .= "   កាលបរិច្ឆេទ / Date: {$dayKh} / {$dayEn}, " . now()->format('F j, Y') . "\n";
         $message .= "   {$sessionEmoji} វេន / Session: {$sessionNameKh} / {$sessionName}\n";
         $message .= "   ម៉ោង / Time: " . $checkInTime->format('h:i A') . "\n";
+        
+        // Show time violation warning if applicable
+        if ($hasTimeViolation) {
+            $message .= "   ⚠️ <b>ការជូនដំណឹងពេលវេលា / Time Notice</b>\n";
+            $timeLimit = $session === 'morning' ? '9:00 AM' : '3:00 PM';
+            $message .= "   ចូលធ្វើការក្រៅម៉ោងកំណត់ ({$timeLimit})\n";
+            $message .= "   Check-in outside normal hours ({$timeLimit})\n";
+        }
         $message .= "\n";
         
         $message .= "📍 <b>ព័ត៌មានទីតាំង / Location Details</b>\n";
@@ -124,7 +138,13 @@ class TelegramService
         
         if ($attendance->note) {
             $message .= "\n";
-            $message .= "📝 <b>កំណត់ចំណាំ / Note</b>\n";
+            if ($hasTimeViolation) {
+                $message .= "📝 <b>មូលហេតុ និងកំណត់ចំណាំ / Reason & Note</b>\n";
+                $message .= "   ⚠️ មានមូលហេតុសម្រាប់ម៉ោងមិនធម្មតា\n";
+                $message .= "   ⚠️ Reason provided for irregular hours\n";
+            } else {
+                $message .= "📝 <b>កំណត់ចំណាំ / Note</b>\n";
+            }
             $message .= "   " . $this->escapeHtml($attendance->note) . "\n";
         }
         
@@ -150,6 +170,9 @@ class TelegramService
         $checkOutTime = $session === 'morning' ? $attendance->morning_check_out : $attendance->afternoon_check_out;
         $sessionHours = $session === 'morning' ? $attendance->formatted_morning_hours : $attendance->formatted_afternoon_hours;
         
+        // Check if this is an early checkout (note contains early checkout marker)
+        $hasEarlyCheckout = $attendance->note && str_contains($attendance->note, 'Early check-out at');
+        
         // Get day of week in both languages
         $dayEn = now()->format('l');
         $dayKh = $this->getDayInKhmer(now()->dayOfWeek);
@@ -170,11 +193,24 @@ class TelegramService
         $message .= "   {$sessionEmoji} វេន / Session: {$sessionNameKh} / {$sessionName}\n";
         $message .= "   ចូលធ្វើការ / Check-In: " . $checkInTime->format('h:i A') . "\n";
         $message .= "   ចេញពីការងារ / Check-Out: " . $checkOutTime->format('h:i A') . "\n";
+        
+        // Show early checkout warning if applicable
+        if ($hasEarlyCheckout) {
+            $message .= "   ⚠️ <b>ការជូនដំណឹងពេលវេលា / Time Notice</b>\n";
+            $timeLimit = $session === 'morning' ? '11:00 AM' : '5:00 PM';
+            $message .= "   ចេញពីការងារមុនម៉ោងកំណត់ ({$timeLimit})\n";
+            $message .= "   Check-out before minimum hours ({$timeLimit})\n";
+        }
         $message .= "\n";
         
         $message .= "⏱️ <b>រយៈពេលធ្វើការ / Work Duration</b>\n";
         $message .= "   {$sessionEmoji} វេន{$sessionNameKh} / {$sessionName} Session: {$sessionHours}\n";
         $message .= "   📊 សរុបថ្ងៃនេះ / Total Today: " . ($attendance->formatted_work_hours ?? '—') . "\n";
+        
+        if ($hasEarlyCheckout) {
+            $message .= "   ⚠️ ម៉ោងបានគណនាតាមពេលវេលាពិតប្រាកដ\n";
+            $message .= "   ⚠️ Hours calculated based on actual times\n";
+        }
         $message .= "\n";
         
         // Session breakdown
@@ -202,7 +238,13 @@ class TelegramService
         
         if ($attendance->note) {
             $message .= "\n";
-            $message .= "📝 <b>កំណត់ចំណាំ / Note</b>\n";
+            if ($hasEarlyCheckout) {
+                $message .= "📝 <b>មូលហេតុ និងកំណត់ចំណាំ / Reason & Note</b>\n";
+                $message .= "   ⚠️ មានមូលហេតុសម្រាប់ការចេញមុនម៉ោង\n";
+                $message .= "   ⚠️ Reason provided for early check-out\n";
+            } else {
+                $message .= "📝 <b>កំណត់ចំណាំ / Note</b>\n";
+            }
             $message .= "   " . $this->escapeHtml($attendance->note) . "\n";
         }
         
@@ -238,12 +280,25 @@ class TelegramService
         $afternoonComplete = $attendances->filter(fn($a) => $a->isAfternoonSessionComplete())->count();
         $fullDayComplete = $attendances->filter(fn($a) => $a->isFullDayComplete())->count();
         
+        // Count time violations
+        $timeViolations = $attendances->filter(function($a) {
+            return $a->note && (
+                str_contains($a->note, 'Late check-in at') || 
+                str_contains($a->note, 'Early check-out at')
+            );
+        })->count();
+        
         $message .= "📈 <b>ស្ថិតិ / Statistics</b>\n";
         $message .= "   ✅ មានវត្តមាន / Present: {$totalPresent}\n";
         $message .= "   ⚠️ យឺតយ៉ាវ / Late: {$totalLate}\n";
         $message .= "   ❌ អវត្តមាន / Absent: {$totalAbsent}\n";
         $message .= "   🏖️ សម្រាក / Leave: {$totalLeave}\n";
-        $message .= "   ⏱️ ម៉ោងសរុប / Total Hours: " . number_format($totalHours, 1) . "h\n\n";
+        $message .= "   ⏱️ ម៉ោងសរុប / Total Hours: " . number_format($totalHours, 1) . "h\n";
+        
+        if ($timeViolations > 0) {
+            $message .= "   ⚠️ ម៉ោងមិនធម្មតា / Irregular Hours: {$timeViolations}\n";
+        }
+        $message .= "\n";
         
         $message .= "📊 <b>ការបញ្ចប់វេន / Session Completion</b>\n";
         $message .= "   🌞 វេនព្រឹក / Morning Sessions: {$morningComplete}\n";

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html class="light" lang="en">
- <head>
+<head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Log Attendance - Attendify</title>
@@ -56,10 +56,47 @@
       .modal:not(.hidden) .modal-content { transform: scale(1); }
       #mobile-menu, #profile-dropdown { transition: transform 0.3s ease, opacity 0.3s ease; transform: translateY(-10px); opacity: 0; }
       #mobile-menu:not(.hidden), #profile-dropdown:not(.hidden) { transform: translateY(0); opacity: 1; }
-      @media (max-width: 768px) { button, a { min-height: 44px; min-width: 44px; } }
+
+      /* Line clamp for notes */
+      .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      /* Mobile Responsive Improvements */
+      @media (max-width: 768px) {
+        .mobile-compact { padding: 12px !important; }
+        .mobile-stack { flex-direction: column !important; width: 100% !important; }
+        .mobile-stack > * { width: 100% !important; }
+        .tab-button { padding: 12px 16px !important; font-size: 0.875rem !important; }
+        .tab-button span span:last-child { display: none !important; }
+        .hide-mobile { display: none !important; }
+        .schedule-card { padding: 12px !important; }
+        .modal-content { max-width: calc(100vw - 32px) !important; }
+        input[type="time"], input[type="date"], input[type="number"], textarea, select {
+          font-size: 14px !important; padding: 10px 12px !important;
+        }
+        #searchSchedules, #searchRecords, #filterDate { font-size: 14px !important; }
+        button, .btn { font-size: 14px !important; padding: 10px 16px !important; }
+        .status-badge { font-size: 10px !important; padding: 4px 8px !important; }
+        .size-8 { width: 32px !important; height: 32px !important; }
+        .size-10 { width: 40px !important; height: 40px !important; }
+        button, a { min-height: 44px; min-width: 44px; }
+      }
+
+      @media (max-width: 640px) {
+        main { padding: 12px !important; }
+        .filter-buttons { flex-direction: column !important; }
+        .schedule-card { width: 100% !important; }
+        h2 { font-size: 1rem !important; }
+        .stats-row { flex-wrap: wrap !important; gap: 8px !important; }
+        .stats-row > * { font-size: 10px !important; padding: 6px 10px !important; }
+      }
     </style>
 </head>
-  <body class="bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 font-display flex h-screen overflow-hidden">
+<body class="bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 font-display flex h-screen overflow-hidden">
     
     <!-- Sidebar -->
     @include('home.Layouts.sidebar')
@@ -68,9 +105,6 @@
       <!-- Header -->
       <header class="h-16 md:h-20 flex items-center justify-between px-4 md:px-6 lg:px-10 bg-surface-light dark:bg-surface-dark border-b border-gray-100 dark:border-gray-800 shrink-0 z-10">
         <div class="flex items-center gap-3 lg:hidden">
-          <button id="menu-toggle" aria-label="Toggle menu" class="text-gray-500 hover:text-gray-900 dark:hover:text-white p-2">
-            <span class="material-symbols-outlined">menu</span>
-          </button>
           <span class="font-bold text-base md:text-lg">Log Attendance</span>
         </div>
         <div class="hidden lg:block">
@@ -84,35 +118,44 @@
       @include('home.Layouts.mobile')
 
       <!-- Main Content -->
-      <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10">
+      <main class="flex-1 overflow-y-auto p-3 md:p-4 lg:p-10">
         
         <!-- Success/Error Messages -->
         @if(session('success'))
-          <div class="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-4 py-3 rounded-xl flex items-center gap-3">
-            <span class="material-symbols-outlined">check_circle</span>
-            <span class="text-sm font-medium">{{ session('success') }}</span>
+          <div class="mb-4 md:mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-3 md:px-4 py-2 md:py-3 rounded-lg md:rounded-xl flex items-center gap-2 md:gap-3">
+            <span class="material-symbols-outlined text-lg md:text-xl">check_circle</span>
+            <span class="text-xs md:text-sm font-medium">{{ session('success') }}</span>
           </div>
         @endif
 
         @if(session('error'))
-          <div class="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-4 py-3 rounded-xl flex items-center gap-3">
-            <span class="material-symbols-outlined">error</span>
-            <span class="text-sm font-medium">{{ session('error') }}</span>
+          <div class="mb-4 md:mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-3 md:px-4 py-2 md:py-3 rounded-lg md:rounded-xl flex items-center gap-2 md:gap-3">
+            <span class="material-symbols-outlined text-lg md:text-xl">error</span>
+            <span class="text-xs md:text-sm font-medium">{{ session('error') }}</span>
           </div>
         @endif
 
         <!-- Tabs -->
-        <div class="mb-6">
-          <div class="border-b border-gray-200 dark:border-gray-700">
-            <nav class="flex gap-4" aria-label="Tabs">
-              <button onclick="switchTab('schedules')" id="tab-schedules" class="tab-button px-4 py-3 text-sm font-medium border-b-2 {{ $activeTab === 'schedules' ? 'border-primary text-primary' : 'border-transparent text-gray-500' }} transition-colors">
-                <span class="flex items-center gap-2"><span class="material-symbols-outlined text-lg">schedule</span><span>Schedules</span></span>
+        <div class="mb-4 md:mb-6">
+          <div class="border-b border-gray-200 dark:border-gray-700 -mx-3 md:mx-0">
+            <nav class="flex gap-1 md:gap-4 px-3 md:px-0 overflow-x-auto no-scrollbar" aria-label="Tabs">
+              <button onclick="switchTab('schedules')" id="tab-schedules" class="tab-button px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-medium border-b-2 {{ $activeTab === 'schedules' ? 'border-primary text-primary' : 'border-transparent text-gray-500' }} transition-colors whitespace-nowrap">
+                <span class="flex items-center gap-1 md:gap-2">
+                  <span class="material-symbols-outlined text-base md:text-lg">schedule</span>
+                  <span class="hidden sm:inline">Schedules</span>
+                </span>
               </button>
-              <button onclick="switchTab('dayoffs')" id="tab-dayoffs" class="tab-button px-4 py-3 text-sm font-medium border-b-2 {{ $activeTab === 'dayoffs' ? 'border-primary text-primary' : 'border-transparent text-gray-500' }} hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
-                <span class="flex items-center gap-2"><span class="material-symbols-outlined text-lg">event_available</span><span>Day Offs</span></span>
+              <button onclick="switchTab('dayoffs')" id="tab-dayoffs" class="tab-button px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-medium border-b-2 {{ $activeTab === 'dayoffs' ? 'border-primary text-primary' : 'border-transparent text-gray-500' }} hover:text-gray-700 dark:hover:text-gray-300 transition-colors whitespace-nowrap">
+                <span class="flex items-center gap-1 md:gap-2">
+                  <span class="material-symbols-outlined text-base md:text-lg">event_available</span>
+                  <span class="hidden sm:inline">Day Offs</span>
+                </span>
               </button>
-              <button onclick="switchTab('records')" id="tab-records" class="tab-button px-4 py-3 text-sm font-medium border-b-2 {{ $activeTab === 'records' ? 'border-primary text-primary' : 'border-transparent text-gray-500' }} hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
-                <span class="flex items-center gap-2"><span class="material-symbols-outlined text-lg">history</span><span>All Records</span></span>
+              <button onclick="switchTab('records')" id="tab-records" class="tab-button px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-medium border-b-2 {{ $activeTab === 'records' ? 'border-primary text-primary' : 'border-transparent text-gray-500' }} hover:text-gray-700 dark:hover:text-gray-300 transition-colors whitespace-nowrap">
+                <span class="flex items-center gap-1 md:gap-2">
+                  <span class="material-symbols-outlined text-base md:text-lg">history</span>
+                  <span class="hidden sm:inline">All Records</span>
+                </span>
               </button>
             </nav>
           </div>
@@ -120,155 +163,163 @@
 
         <!-- Schedules Tab -->
         <div id="content-schedules" class="tab-content {{ $activeTab === 'schedules' ? '' : 'hidden' }}">
-          <div class="mb-6">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <h2 class="text-lg font-bold text-gray-900 dark:text-white">Employee Work Schedules</h2>
-              <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                <div class="relative">
+          <div class="mb-4 md:mb-6">
+            <div class="flex flex-col gap-3 md:gap-4">
+              <h2 class="text-base md:text-lg font-bold text-gray-900 dark:text-white">Employee Work Schedules</h2>
+              <div class="flex flex-col sm:flex-row gap-2 md:gap-3">
+                <div class="relative flex-1">
                   <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                    <span class="material-symbols-outlined text-[20px]">search</span>
+                    <span class="material-symbols-outlined text-base md:text-[20px]">search</span>
                   </span>
-                  <input type="text" id="searchSchedules" placeholder="Search employees..." class="pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary w-full sm:w-64 transition-all" />
+                  <input type="text" id="searchSchedules" placeholder="Search employees..." class="w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 text-sm rounded-lg md:rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
                 </div>
-                <button onclick="openScheduleModal()" class="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl font-medium transition-colors shadow-sm">
-                  <span class="material-symbols-outlined">add</span><span>Set Schedule</span>
+                <button onclick="openScheduleModal()" class="flex items-center justify-center gap-2 px-4 py-2 md:py-2.5 text-sm bg-primary hover:bg-primary-dark text-white rounded-lg md:rounded-xl font-medium transition-colors shadow-sm whitespace-nowrap">
+                  <span class="material-symbols-outlined text-lg md:text-xl">add</span>
+                  <span>Set Schedule</span>
                 </button>
               </div>
             </div>
           </div>
 
           <!-- Schedules Grid -->
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6" id="schedulesGrid">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6" id="schedulesGrid">
             @forelse($users as $user)
-              <div class="schedule-card bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 p-4" data-name="{{ strtolower($user->name) }}" data-email="{{ strtolower($user->email ?? '') }}">
-                <div class="flex items-start justify-between mb-3">
-                  <div class="flex items-center gap-3">
+              <div class="schedule-card bg-surface-light dark:bg-surface-dark rounded-lg md:rounded-xl border border-gray-100 dark:border-gray-800 p-3 md:p-4" data-name="{{ strtolower($user->name) }}" data-email="{{ strtolower($user->email ?? '') }}">
+                <div class="flex items-start justify-between mb-2 md:mb-3">
+                  <div class="flex items-center gap-2 md:gap-3">
                     @if($user->image)
-                      <img src="{{ asset('users/' . $user->image) }}" alt="{{ $user->name }}" class="size-10 rounded-full object-cover">
+                      <img src="{{ asset('users/' . $user->image) }}" alt="{{ $user->name }}" class="size-8 md:size-10 rounded-full object-cover">
                     @else
-                      <div class="size-10 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                      <div class="size-8 md:size-10 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-xs md:text-sm">
                         {{ strtoupper(substr($user->name, 0, 2)) }}
                       </div>
                     @endif
                     <div>
-                      <p class="font-semibold text-gray-900 dark:text-white text-sm">{{ $user->name }}</p>
-                      <p class="text-xs text-gray-500 dark:text-gray-400">{{ $user->email }}</p>
+                      <p class="font-semibold text-gray-900 dark:text-white text-xs md:text-sm">{{ $user->name }}</p>
+                      <p class="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{{ $user->email }}</p>
                     </div>
                   </div>
                 </div>
 
                 @if($user->attendanceSchedule)
-                  <div class="space-y-2 mb-3">
+                  <div class="space-y-2 mb-2 md:mb-3">
                     <div class="border-b border-gray-100 dark:border-gray-800 pb-2">
-                      <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 flex items-center gap-1">
-                        <span class="material-symbols-outlined text-base">wb_sunny</span>MORNING SESSION
+                      <p class="text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 md:mb-1.5 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm md:text-base">wb_sunny</span>MORNING
                       </p>
-                      <div class="flex items-center justify-between text-sm">
+                      <div class="flex items-center justify-between text-xs md:text-sm">
                         <span class="text-gray-600 dark:text-gray-400">In:</span>
                         <span class="font-medium text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_in_morining)->format('h:i A') }}</span>
                       </div>
-                      <div class="flex items-center justify-between text-sm">
+                      <div class="flex items-center justify-between text-xs md:text-sm">
                         <span class="text-gray-600 dark:text-gray-400">Out:</span>
                         <span class="font-medium text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_out_morining)->format('h:i A') }}</span>
                       </div>
                     </div>
                     <div class="border-b border-gray-100 dark:border-gray-800 pb-2">
-                      <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 flex items-center gap-1">
-                        <span class="material-symbols-outlined text-base">wb_twilight</span>AFTERNOON SESSION
+                      <p class="text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 md:mb-1.5 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm md:text-base">wb_twilight</span>AFTERNOON
                       </p>
-                      <div class="flex items-center justify-between text-sm">
+                      <div class="flex items-center justify-between text-xs md:text-sm">
                         <span class="text-gray-600 dark:text-gray-400">In:</span>
                         <span class="font-medium text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_in_afternoon)->format('h:i A') }}</span>
                       </div>
-                      <div class="flex items-center justify-between text-sm">
+                      <div class="flex items-center justify-between text-xs md:text-sm">
                         <span class="text-gray-600 dark:text-gray-400">Out:</span>
                         <span class="font-medium text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_out_afternoon)->format('h:i A') }}</span>
                       </div>
                     </div>
-                    <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center justify-between text-xs md:text-sm">
                       <span class="text-gray-600 dark:text-gray-400">Late Tolerance:</span>
                       <span class="font-medium text-gray-900 dark:text-white">{{ $user->attendanceSchedule->late_allowed_min }} mins</span>
                     </div>
                   </div>
-                  <button onclick="editSchedule({{ $user->id }}, '{{ $user->name }}', '{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_in_morining)->format('H:i') }}', '{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_out_morining)->format('H:i') }}', '{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_in_afternoon)->format('H:i') }}', '{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_out_afternoon)->format('H:i') }}', {{ $user->attendanceSchedule->late_allowed_min }})" class="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                    <span class="material-symbols-outlined text-lg">edit</span><span>Update Schedule</span>
+                  <button onclick="editSchedule({{ $user->id }}, '{{ $user->name }}', '{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_in_morining)->format('H:i') }}', '{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_out_morining)->format('H:i') }}', '{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_in_afternoon)->format('H:i') }}', '{{ \Carbon\Carbon::parse($user->attendanceSchedule->scheduled_check_out_afternoon)->format('H:i') }}', {{ $user->attendanceSchedule->late_allowed_min }})" class="w-full flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs md:text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-outlined text-base md:text-lg">edit</span>
+                    <span>Update</span>
                   </button>
                 @else
-                  <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-3 text-center">
-                    <p class="text-xs text-gray-500 dark:text-gray-400">No schedule set</p>
+                  <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 md:p-3 mb-2 md:mb-3 text-center">
+                    <p class="text-[10px] md:text-xs text-gray-500 dark:text-gray-400">No schedule set</p>
                   </div>
-                  <button onclick="editSchedule({{ $user->id }}, '{{ $user->name }}', '07:30', '11:30', '14:00', '17:30', 10)" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-medium transition-colors">
-                    <span class="material-symbols-outlined text-lg">add</span><span>Set Schedule</span>
+                  <button onclick="editSchedule({{ $user->id }}, '{{ $user->name }}', '07:30', '11:30', '14:00', '17:30', 10)" class="w-full flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs md:text-sm font-medium transition-colors">
+                    <span class="material-symbols-outlined text-base md:text-lg">add</span>
+                    <span>Set Schedule</span>
                   </button>
                 @endif
               </div>
             @empty
-              <div class="col-span-full text-center py-12">
-                <span class="material-symbols-outlined text-5xl text-gray-300 mb-3">person_off</span>
-                <p class="text-gray-500 dark:text-gray-400">No employees found</p>
+              <div class="col-span-full text-center py-8 md:py-12">
+                <span class="material-symbols-outlined text-4xl md:text-5xl text-gray-300 mb-2 md:mb-3">person_off</span>
+                <p class="text-sm md:text-base text-gray-500 dark:text-gray-400">No employees found</p>
               </div>
             @endforelse
           </div>
 
-          <div id="noScheduleResults" class="hidden text-center py-12">
-            <span class="material-symbols-outlined text-5xl text-gray-300 mb-3">search_off</span>
-            <p class="text-gray-500 dark:text-gray-400">No employees found matching your search</p>
+          <div id="noScheduleResults" class="hidden text-center py-8 md:py-12">
+            <span class="material-symbols-outlined text-4xl md:text-5xl text-gray-300 mb-2 md:mb-3">search_off</span>
+            <p class="text-sm md:text-base text-gray-500 dark:text-gray-400">No employees found matching your search</p>
           </div>
 
           @if($users->hasPages())
-            <div class="mt-6">{{ $users->links() }}</div>
+            <div class="mt-4 md:mt-6">{{ $users->links() }}</div>
           @endif
         </div>
 
         <!-- Day Offs Tab -->
         <div id="content-dayoffs" class="tab-content {{ $activeTab === 'dayoffs' ? '' : 'hidden' }}">
-          <div class="mb-6 flex justify-between items-center">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white">Employee Day Offs</h2>
-            <button onclick="openDayOffModal()" class="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition-colors shadow-sm">
-              <span class="material-symbols-outlined">add</span><span>Add Day Off</span>
+          <div class="mb-4 md:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <h2 class="text-base md:text-lg font-bold text-gray-900 dark:text-white">Employee Day Offs</h2>
+            <button onclick="openDayOffModal()" class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 md:py-2.5 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded-lg md:rounded-xl font-medium transition-colors shadow-sm">
+              <span class="material-symbols-outlined text-lg md:text-xl">add</span>
+              <span>Add Day Off</span>
             </button>
           </div>
 
-          <div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+          <div class="bg-surface-light dark:bg-surface-dark rounded-lg md:rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
             <div class="overflow-x-auto">
-              <table class="w-full">
+              <table class="w-full text-xs md:text-sm">
                 <thead class="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
                   <tr>
-                    <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Employee</th>
-                    <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
-                    <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reason</th>
-                    <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Requested</th>
-                    <th class="text-right py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                    <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Employee</th>
+                    <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                    <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hide-mobile">Reason</th>
+                    <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hide-mobile">Requested</th>
+                    <th class="text-right py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                   @forelse($dayOffs as $dayOff)
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                      <td class="py-4 px-6">
-                        <div class="flex items-center gap-3">
+                      <td class="py-3 md:py-4 px-3 md:px-6">
+                        <div class="flex items-center gap-2 md:gap-3">
                           @if($dayOff->user->image)
-                            <img src="{{ asset('users/' . $dayOff->user->image) }}" alt="{{ $dayOff->user->name }}" class="size-8 rounded-full object-cover">
+                            <img src="{{ asset('users/' . $dayOff->user->image) }}" alt="{{ $dayOff->user->name }}" class="size-6 md:size-8 rounded-full object-cover">
                           @else
-                            <div class="size-8 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-xs">
+                            <div class="size-6 md:size-8 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-[10px] md:text-xs">
                               {{ strtoupper(substr($dayOff->user->name, 0, 2)) }}
                             </div>
                           @endif
-                          <span class="text-sm font-medium text-gray-900 dark:text-white">{{ $dayOff->user->name }}</span>
+                          <span class="text-xs md:text-sm font-medium text-gray-900 dark:text-white">{{ $dayOff->user->name }}</span>
                         </div>
                       </td>
-                      <td class="py-4 px-6">
-                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($dayOff->off_date)->format('M d, Y') }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ \Carbon\Carbon::parse($dayOff->off_date)->format('l') }}</p>
+                      <td class="py-3 md:py-4 px-3 md:px-6 whitespace-nowrap">
+                        <p class="text-xs md:text-sm font-medium text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($dayOff->off_date)->format('M d, Y') }}</p>
+                        <p class="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 hidden md:block">{{ \Carbon\Carbon::parse($dayOff->off_date)->format('l') }}</p>
                       </td>
-                      <td class="py-4 px-6"><p class="text-sm text-gray-600 dark:text-gray-400">{{ $dayOff->reason }}</p></td>
-                      <td class="py-4 px-6"><p class="text-sm text-gray-500 dark:text-gray-400">{{ $dayOff->created_at->diffForHumans() }}</p></td>
-                      <td class="py-4 px-6">
-                        <div class="flex items-center justify-end gap-2">
+                      <td class="py-3 md:py-4 px-3 md:px-6 hide-mobile">
+                        <p class="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate max-w-[200px]">{{ $dayOff->reason }}</p>
+                      </td>
+                      <td class="py-3 md:py-4 px-3 md:px-6 hide-mobile">
+                        <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400">{{ $dayOff->created_at->diffForHumans() }}</p>
+                      </td>
+                      <td class="py-3 md:py-4 px-3 md:px-6">
+                        <div class="flex items-center justify-end gap-1 md:gap-2">
                           <form method="POST" action="{{ route('admin.attendance.dayoff.delete', $dayOff->id) }}" class="inline" onsubmit="return confirm('Are you sure you want to delete this day off?')">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Delete">
-                              <span class="material-symbols-outlined text-xl">delete</span>
+                            <button type="submit" class="p-1.5 md:p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Delete">
+                              <span class="material-symbols-outlined text-lg md:text-xl">delete</span>
                             </button>
                           </form>
                         </div>
@@ -276,10 +327,10 @@
                     </tr>
                   @empty
                     <tr>
-                      <td colspan="5" class="py-12 text-center">
-                        <div class="flex flex-col items-center gap-3">
-                          <span class="material-symbols-outlined text-5xl text-gray-300">event_busy</span>
-                          <p class="text-gray-500 dark:text-gray-400">No day offs found</p>
+                      <td colspan="5" class="py-8 md:py-12 text-center">
+                        <div class="flex flex-col items-center gap-2 md:gap-3">
+                          <span class="material-symbols-outlined text-4xl md:text-5xl text-gray-300">event_busy</span>
+                          <p class="text-sm md:text-base text-gray-500 dark:text-gray-400">No day offs found</p>
                         </div>
                       </td>
                     </tr>
@@ -288,56 +339,61 @@
               </table>
             </div>
             @if($dayOffs->hasPages())
-              <div class="p-6 border-t border-gray-100 dark:border-gray-800">{{ $dayOffs->links() }}</div>
+              <div class="p-4 md:p-6 border-t border-gray-100 dark:border-gray-800">{{ $dayOffs->links() }}</div>
             @endif
           </div>
         </div>
 
         <!-- All Records Tab -->
         <div id="content-records" class="tab-content {{ $activeTab === 'records' ? '' : 'hidden' }}">
-          <div class="mb-6">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <h2 class="text-lg font-bold text-gray-900 dark:text-white">All Attendance Records</h2>
-              <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                <div class="relative">
-                  <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                    <span class="material-symbols-outlined text-[20px]">search</span>
-                  </span>
-                  <input type="text" id="searchRecords" placeholder="Search employee..." class="pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary w-full sm:w-64 transition-all" />
+          <div class="mb-4 md:mb-6">
+            <div class="flex flex-col gap-3 md:gap-4">
+              <h2 class="text-base md:text-lg font-bold text-gray-900 dark:text-white">All Attendance Records</h2>
+              <div class="flex flex-col gap-2 md:gap-3">
+                <div class="flex flex-col sm:flex-row gap-2 md:gap-3">
+                  <div class="relative flex-1">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                      <span class="material-symbols-outlined text-base md:text-[20px]">search</span>
+                    </span>
+                    <input type="text" id="searchRecords" placeholder="Search employee..." class="w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 text-sm rounded-lg md:rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+                  </div>
+                  <div class="relative flex-1">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                      <span class="material-symbols-outlined text-base md:text-[20px]">calendar_today</span>
+                    </span>
+                    <input type="date" id="filterDate" class="w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 text-sm rounded-lg md:rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+                  </div>
                 </div>
-                <div class="relative">
-                  <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                    <span class="material-symbols-outlined text-[20px]">calendar_today</span>
-                  </span>
-                  <input type="date" id="filterDate" class="pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary w-full sm:w-auto transition-all" />
-                </div>
-                <div class="flex gap-2">
-                  <button onclick="filterByDate('today')" class="px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">Today</button>
-                  <button onclick="filterByDate('clear')" class="px-4 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Clear</button>
+                <div class="flex gap-2 filter-buttons">
+                  <button onclick="filterByDate('today')" class="flex-1 sm:flex-none px-3 md:px-4 py-2 md:py-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg md:rounded-xl text-xs md:text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">Today</button>
+                  <button onclick="filterByDate('clear')" class="flex-1 sm:flex-none px-3 md:px-4 py-2 md:py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg md:rounded-xl text-xs md:text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Clear</button>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+          <!-- Desktop Table View -->
+          <div class="hidden md:block bg-surface-light dark:bg-surface-dark rounded-lg md:rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
             <div class="overflow-x-auto" id="recordsTableContainer">
-              <table class="w-full">
+              <table class="w-full text-xs md:text-sm">
                 <thead class="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
                   <tr>
-                    <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Employee</th>
-                    <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
-                    <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Morning</th>
-                    <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Afternoon</th>
-                    <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hours</th>
-                    <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                    <th class="text-right py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                    <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Employee</th>
+                    <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                    <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Morning</th>
+                    <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Afternoon</th>
+                    <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hours</th>
+                    <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                    <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Note</th>
+                    <th class="text-right py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-800" id="attendanceTableBody">
                   @forelse($attendances as $attendance)
                     <tr class="attendance-row hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" data-name="{{ strtolower($attendance->user->name) }}" data-email="{{ strtolower($attendance->user->email ?? '') }}" data-date="{{ $attendance->attendance_date->format('Y-m-d') }}" data-status="{{ $attendance->status }}">
-                      <td class="py-4 px-6">
-                        <div class="flex items-center gap-3">
+                      <!-- Employee -->
+                      <td class="py-3 md:py-4 px-3 md:px-6">
+                        <div class="flex items-center gap-2 md:gap-3">
                           @if($attendance->user->image)
                             <img src="{{ asset('users/' . $attendance->user->image) }}" alt="{{ $attendance->user->name }}" class="size-8 rounded-full object-cover">
                           @else
@@ -348,32 +404,72 @@
                           <span class="text-sm font-medium text-gray-900 dark:text-white">{{ $attendance->user->name }}</span>
                         </div>
                       </td>
-                      <td class="py-4 px-6">
+                      
+                      <!-- Date -->
+                      <td class="py-3 md:py-4 px-3 md:px-6">
                         <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $attendance->attendance_date->format('M d, Y') }}</p>
                         <p class="text-xs text-gray-500 dark:text-gray-400">{{ $attendance->attendance_date->format('l') }}</p>
                       </td>
-                      <td class="py-4 px-6">
+                      
+                      <!-- Morning -->
+                      <td class="py-3 md:py-4 px-3 md:px-6">
                         <div class="space-y-0.5">
                           <p class="text-xs text-gray-500 dark:text-gray-400">In: <span class="text-gray-900 dark:text-white font-medium">{{ $attendance->morning_check_in ? $attendance->morning_check_in->format('h:i A') : '—' }}</span></p>
                           <p class="text-xs text-gray-500 dark:text-gray-400">Out: <span class="text-gray-900 dark:text-white font-medium">{{ $attendance->morning_check_out ? $attendance->morning_check_out->format('h:i A') : '—' }}</span></p>
                         </div>
                       </td>
-                      <td class="py-4 px-6">
+                      
+                      <!-- Afternoon -->
+                      <td class="py-3 md:py-4 px-3 md:px-6">
                         <div class="space-y-0.5">
                           <p class="text-xs text-gray-500 dark:text-gray-400">In: <span class="text-gray-900 dark:text-white font-medium">{{ $attendance->afternoon_check_in ? $attendance->afternoon_check_in->format('h:i A') : '—' }}</span></p>
                           <p class="text-xs text-gray-500 dark:text-gray-400">Out: <span class="text-gray-900 dark:text-white font-medium">{{ $attendance->afternoon_check_out ? $attendance->afternoon_check_out->format('h:i A') : '—' }}</span></p>
                         </div>
                       </td>
-                      <td class="py-4 px-6">
+                      
+                      <!-- Hours -->
+                      <td class="py-3 md:py-4 px-3 md:px-6">
                         <p class="text-sm text-gray-900 dark:text-white font-medium">{{ $attendance->formatted_work_hours }}</p>
                         <p class="text-xs text-gray-500 dark:text-gray-400">M: {{ $attendance->formatted_morning_hours }} | A: {{ $attendance->formatted_afternoon_hours }}</p>
                       </td>
-                      <td class="py-4 px-6">
+                      
+                      <!-- Status -->
+                      <td class="py-3 md:py-4 px-3 md:px-6">
                         <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium {{ $attendance->status === 'on_time' ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' : '' }} {{ $attendance->status === 'late' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' : '' }} {{ $attendance->status === 'absent' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' : '' }} {{ $attendance->status === 'leave' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' : '' }}">
                           {{ ucfirst(str_replace('_', ' ', $attendance->status)) }}
                         </span>
                       </td>
-                      <td class="py-4 px-6">
+                      
+                      <!-- Note -->
+                      <td class="py-3 md:py-4 px-3 md:px-6 max-w-xs">
+                        @if($attendance->note || $attendance->absent_note)
+                          <div class="space-y-1">
+                            @if($attendance->note)
+                              <div class="text-xs text-gray-700 dark:text-gray-300 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg border border-blue-100 dark:border-blue-800">
+                                <p class="font-medium text-blue-600 dark:text-blue-400 mb-0.5 flex items-center gap-1">
+                                  <span class="material-symbols-outlined text-sm">info</span>
+                                  Note
+                                </p>
+                                <p class="line-clamp-2">{{ $attendance->note }}</p>
+                              </div>
+                            @endif
+                            @if($attendance->absent_note)
+                              <div class="text-xs text-gray-700 dark:text-gray-300 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg border border-red-100 dark:border-red-800">
+                                <p class="font-medium text-red-600 dark:text-red-400 mb-0.5 flex items-center gap-1">
+                                  <span class="material-symbols-outlined text-sm">warning</span>
+                                  Absent Note
+                                </p>
+                                <p class="line-clamp-2">{{ $attendance->absent_note }}</p>
+                              </div>
+                            @endif
+                          </div>
+                        @else
+                          <span class="text-gray-400 text-xs">—</span>
+                        @endif
+                      </td>
+                      
+                      <!-- Actions -->
+                      <td class="py-3 md:py-4 px-3 md:px-6">
                         <div class="flex items-center justify-end gap-2">
                           <button onclick="viewAttendance({{ $attendance->id }})" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title="View Details">
                             <span class="material-symbols-outlined text-xl">visibility</span>
@@ -393,7 +489,7 @@
                     </tr>
                   @empty
                     <tr id="noRecordsDefault">
-                      <td colspan="7" class="py-12 text-center">
+                      <td colspan="8" class="py-12 text-center">
                         <div class="flex flex-col items-center gap-3">
                           <span class="material-symbols-outlined text-5xl text-gray-300">event_busy</span>
                           <p class="text-gray-500 dark:text-gray-400">No attendance records found</p>
@@ -414,20 +510,149 @@
             </div>
           </div>
 
-          <div class="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-sm">
+          <!-- Mobile Card View -->
+          <div class="md:hidden space-y-3" id="recordsCardsContainer">
+            @forelse($attendances as $attendance)
+              <div class="attendance-card bg-surface-light dark:bg-surface-dark rounded-lg border border-gray-100 dark:border-gray-800 p-3" data-name="{{ strtolower($attendance->user->name) }}" data-email="{{ strtolower($attendance->user->email ?? '') }}" data-date="{{ $attendance->attendance_date->format('Y-m-d') }}" data-status="{{ $attendance->status }}">
+                
+                <!-- Header -->
+                <div class="flex items-start justify-between mb-3">
+                  <div class="flex items-center gap-2">
+                    @if($attendance->user->image)
+                      <img src="{{ asset('users/' . $attendance->user->image) }}" alt="{{ $attendance->user->name }}" class="size-10 rounded-full object-cover">
+                    @else
+                      <div class="size-10 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                        {{ strtoupper(substr($attendance->user->name, 0, 2)) }}
+                      </div>
+                    @endif
+                    <div>
+                      <p class="font-semibold text-sm text-gray-900 dark:text-white">{{ $attendance->user->name }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">{{ $attendance->attendance_date->format('M d, Y') }} • {{ $attendance->attendance_date->format('D') }}</p>
+                    </div>
+                  </div>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium {{ $attendance->status === 'on_time' ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' : '' }} {{ $attendance->status === 'late' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' : '' }} {{ $attendance->status === 'absent' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' : '' }} {{ $attendance->status === 'leave' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' : '' }}">
+                    {{ ucfirst(str_replace('_', ' ', $attendance->status)) }}
+                  </span>
+                </div>
+
+                <!-- Sessions -->
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                  <!-- Morning Session -->
+                  <div class="bg-blue-50/50 dark:bg-blue-900/10 rounded-lg p-2 border border-blue-100 dark:border-blue-800/50">
+                    <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+                      <span class="material-symbols-outlined text-xs">wb_sunny</span>
+                      MORNING
+                    </p>
+                    <div class="space-y-0.5">
+                      <p class="text-xs text-gray-600 dark:text-gray-400">
+                        In: <span class="font-medium text-gray-900 dark:text-white">{{ $attendance->morning_check_in ? $attendance->morning_check_in->format('h:i A') : '—' }}</span>
+                      </p>
+                      <p class="text-xs text-gray-600 dark:text-gray-400">
+                        Out: <span class="font-medium text-gray-900 dark:text-white">{{ $attendance->morning_check_out ? $attendance->morning_check_out->format('h:i A') : '—' }}</span>
+                      </p>
+                      <p class="text-[10px] text-blue-600 dark:text-blue-400 font-medium">{{ $attendance->formatted_morning_hours }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Afternoon Session -->
+                  <div class="bg-orange-50/50 dark:bg-orange-900/10 rounded-lg p-2 border border-orange-100 dark:border-orange-800/50">
+                    <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+                      <span class="material-symbols-outlined text-xs">wb_twilight</span>
+                      AFTERNOON
+                    </p>
+                    <div class="space-y-0.5">
+                      <p class="text-xs text-gray-600 dark:text-gray-400">
+                        In: <span class="font-medium text-gray-900 dark:text-white">{{ $attendance->afternoon_check_in ? $attendance->afternoon_check_in->format('h:i A') : '—' }}</span>
+                      </p>
+                      <p class="text-xs text-gray-600 dark:text-gray-400">
+                        Out: <span class="font-medium text-gray-900 dark:text-white">{{ $attendance->afternoon_check_out ? $attendance->afternoon_check_out->format('h:i A') : '—' }}</span>
+                      </p>
+                      <p class="text-[10px] text-orange-600 dark:text-orange-400 font-medium">{{ $attendance->formatted_afternoon_hours }}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Total Hours -->
+                <div class="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg mb-2">
+                  <span class="text-xs text-gray-600 dark:text-gray-400 font-medium">Total Hours</span>
+                  <span class="text-sm font-bold text-gray-900 dark:text-white">{{ $attendance->formatted_work_hours }}</span>
+                </div>
+
+                <!-- Notes Section (if any) -->
+                @if($attendance->note || $attendance->absent_note)
+                  <div class="space-y-2 mb-2">
+                    @if($attendance->note)
+                      <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-2">
+                        <p class="text-[10px] font-semibold text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1">
+                          <span class="material-symbols-outlined text-xs">info</span>
+                          NOTE
+                        </p>
+                        <p class="text-xs text-gray-700 dark:text-gray-300">{{ $attendance->note }}</p>
+                      </div>
+                    @endif
+                    @if($attendance->absent_note)
+                      <div class="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-lg p-2">
+                        <p class="text-[10px] font-semibold text-red-600 dark:text-red-400 mb-1 flex items-center gap-1">
+                          <span class="material-symbols-outlined text-xs">warning</span>
+                          ABSENT NOTE
+                        </p>
+                        <p class="text-xs text-gray-700 dark:text-gray-300">{{ $attendance->absent_note }}</p>
+                      </div>
+                    @endif
+                  </div>
+                @endif
+
+                <!-- Actions -->
+                <div class="flex gap-2">
+                  <button onclick="viewAttendance({{ $attendance->id }})" class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
+                    <span class="material-symbols-outlined text-base">visibility</span>
+                    <span>View</span>
+                  </button>
+                  <button onclick="editAttendance({{ $attendance->id }})" class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                    <span class="material-symbols-outlined text-base">edit</span>
+                    <span>Edit</span>
+                  </button>
+                  <form method="POST" action="{{ route('admin.attendance.delete', $attendance->id) }}" class="inline" onsubmit="return confirm('Are you sure you want to delete this attendance record?')">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+                      <span class="material-symbols-outlined text-base">delete</span>
+                    </button>
+                  </form>
+                </div>
+              </div>
+            @empty
+              <div id="noRecordsDefaultMobile" class="text-center py-12">
+                <div class="flex flex-col items-center gap-3">
+                  <span class="material-symbols-outlined text-5xl text-gray-300">event_busy</span>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">No attendance records found</p>
+                </div>
+              </div>
+            @endforelse
+          </div>
+
+          <div id="noRecordsFilteredMobile" class="md:hidden hidden py-12 text-center">
+            <div class="flex flex-col items-center gap-3">
+              <span class="material-symbols-outlined text-5xl text-gray-300">search_off</span>
+              <p class="text-sm text-gray-500 dark:text-gray-400">No records found matching your filters</p>
+              <button onclick="clearAllFilters()" class="mt-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-medium transition-colors">Clear Filters</button>
+            </div>
+          </div>
+
+          <div class="mt-3 md:mt-4 flex flex-col gap-3 md:gap-4 text-xs md:text-sm">
             <p class="text-gray-600 dark:text-gray-400">
               Showing <span id="visibleCount" class="font-semibold text-gray-900 dark:text-white">{{ $attendances->count() }}</span> of <span id="totalCount" class="font-semibold text-gray-900 dark:text-white">{{ $attendances->count() }}</span> records
             </p>
-            <div class="flex flex-wrap gap-2">
-              <span class="px-3 py-1 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg text-xs font-medium"><span id="onTimeCount">{{ $attendances->where('status', 'on_time')->count() }}</span> On Time</span>
-              <span class="px-3 py-1 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-lg text-xs font-medium"><span id="lateCount">{{ $attendances->where('status', 'late')->count() }}</span> Late</span>
-              <span class="px-3 py-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-xs font-medium"><span id="absentCount">{{ $attendances->where('status', 'absent')->count() }}</span> Absent</span>
-              <span class="px-3 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg text-xs font-medium"><span id="leaveCount">{{ $attendances->where('status', 'leave')->count() }}</span> Leave</span>
+            <div class="flex flex-wrap gap-1.5 md:gap-2 stats-row">
+              <span class="px-2 md:px-3 py-1 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-md md:rounded-lg text-[10px] md:text-xs font-medium"><span id="onTimeCount">{{ $attendances->where('status', 'on_time')->count() }}</span> On Time</span>
+              <span class="px-2 md:px-3 py-1 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-md md:rounded-lg text-[10px] md:text-xs font-medium"><span id="lateCount">{{ $attendances->where('status', 'late')->count() }}</span> Late</span>
+              <span class="px-2 md:px-3 py-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md md:rounded-lg text-[10px] md:text-xs font-medium"><span id="absentCount">{{ $attendances->where('status', 'absent')->count() }}</span> Absent</span>
+              <span class="px-2 md:px-3 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-md md:rounded-lg text-[10px] md:text-xs font-medium"><span id="leaveCount">{{ $attendances->where('status', 'leave')->count() }}</span> Leave</span>
             </div>
           </div>
 
           @if($attendances->hasPages())
-            <div class="mt-6">{{ $attendances->links() }}</div>
+            <div class="mt-4 md:mt-6">{{ $attendances->links() }}</div>
           @endif
         </div>
       </main>
@@ -814,14 +1039,24 @@
       function filterAttendanceRecords() {
         const searchTerm = document.getElementById('searchRecords').value.toLowerCase();
         const selectedDate = document.getElementById('filterDate').value;
+        
+        // Desktop table rows
         const rows = document.querySelectorAll('.attendance-row');
         const noResultsFiltered = document.getElementById('noRecordsFiltered');
         const tableContainer = document.getElementById('recordsTableContainer');
+        
+        // Mobile cards
+        const cards = document.querySelectorAll('.attendance-card');
+        const noResultsFilteredMobile = document.getElementById('noRecordsFilteredMobile');
+        const cardsContainer = document.getElementById('recordsCardsContainer');
+        
         let visibleCount = 0;
         let onTimeCount = 0;
         let lateCount = 0;
         let absentCount = 0;
         let leaveCount = 0;
+        
+        // Filter desktop rows
         rows.forEach(row => {
           const name = row.dataset.name;
           const email = row.dataset.email;
@@ -829,6 +1064,7 @@
           const status = row.dataset.status;
           const matchesSearch = name.includes(searchTerm) || email.includes(searchTerm);
           const matchesDate = !selectedDate || rowDate === selectedDate;
+          
           if (matchesSearch && matchesDate) {
             row.style.display = '';
             visibleCount++;
@@ -840,17 +1076,46 @@
             row.style.display = 'none';
           }
         });
-        document.getElementById('visibleCount').textContent = visibleCount;
+        
+        // Filter mobile cards
+        let mobileVisibleCount = 0;
+        cards.forEach(card => {
+          const name = card.dataset.name;
+          const email = card.dataset.email;
+          const cardDate = card.dataset.date;
+          const matchesSearch = name.includes(searchTerm) || email.includes(searchTerm);
+          const matchesDate = !selectedDate || cardDate === selectedDate;
+          
+          if (matchesSearch && matchesDate) {
+            card.style.display = '';
+            mobileVisibleCount++;
+          } else {
+            card.style.display = 'none';
+          }
+        });
+        
+        document.getElementById('visibleCount').textContent = visibleCount || mobileVisibleCount;
         document.getElementById('onTimeCount').textContent = onTimeCount;
         document.getElementById('lateCount').textContent = lateCount;
         document.getElementById('absentCount').textContent = absentCount;
         document.getElementById('leaveCount').textContent = leaveCount;
-        if (visibleCount === 0) {
-          noResultsFiltered.classList.remove('hidden');
-          tableContainer.classList.add('hidden');
+        
+        // Show/hide no results for desktop
+        if (visibleCount === 0 && rows.length > 0) {
+          if (noResultsFiltered) noResultsFiltered.classList.remove('hidden');
+          if (tableContainer) tableContainer.classList.add('hidden');
         } else {
-          noResultsFiltered.classList.add('hidden');
-          tableContainer.classList.remove('hidden');
+          if (noResultsFiltered) noResultsFiltered.classList.add('hidden');
+          if (tableContainer) tableContainer.classList.remove('hidden');
+        }
+        
+        // Show/hide no results for mobile
+        if (mobileVisibleCount === 0 && cards.length > 0) {
+          if (noResultsFilteredMobile) noResultsFilteredMobile.classList.remove('hidden');
+          if (cardsContainer) cardsContainer.classList.add('hidden');
+        } else {
+          if (noResultsFilteredMobile) noResultsFilteredMobile.classList.add('hidden');
+          if (cardsContainer) cardsContainer.classList.remove('hidden');
         }
       }
 

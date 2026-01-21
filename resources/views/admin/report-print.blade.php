@@ -178,10 +178,10 @@
               <span class="font-semibold w-28">Employee ID:</span>
               <span>{{ $userId }}</span>
             </div>
-            <div class="flex">
+            {{-- <div class="flex">
               <span class="font-semibold w-28">Gender:</span>
               <span>{{ ucfirst($attendances->first()->user->gender ?? 'N/A') }}</span>
-            </div>
+            </div> --}}
             <div class="flex justify-end">
               <span class="font-semibold w-28">Phone:</span>
               <span>{{ $attendances->first()->user->phone ?? 'N/A' }}</span>
@@ -239,7 +239,7 @@
               <tr class="bg-gray-100">
                 <th class="text-center" style="width: 8%;">Rank</th>
                 <th class="text-left" style="width: 30%;">Employee Name</th>
-                <th class="text-center" style="width: 15%;">Gender</th>
+                {{-- <th class="text-center" style="width: 15%;">Gender</th> --}}
                 <th class="text-center" style="width: 17%;">Total Hours</th>
                 <th class="text-center" style="width: 15%;">Days</th>
                 <th class="text-center" style="width: 15%;">Avg Hrs/Day</th>
@@ -256,12 +256,12 @@
                     @endif
                   </td>
                   <td>{{ $topUser->name }}</td>
-                  <td class="text-center">
+                  {{-- <td class="text-center">
                     <span class="gender-badge {{ $topUser->gender === 'male' ? 'gender-male' : 'gender-female' }}">
                       {{ $topUser->gender === 'male' ? '♂' : '♀' }}
                       {{ ucfirst($topUser->gender ?? 'N/A') }}
                     </span>
-                  </td>
+                  </td> --}}
                   <td class="text-center font-semibold">
                     @php
                       $hours = floor($topUser->total_hours ?? 0);
@@ -287,7 +287,7 @@
             <th class="text-center" style="width: 5%;">No</th>
             @if(!$userId)
               <th class="text-left" style="width: 20%;">Employee</th>
-              <th class="text-center" style="width: 10%;">Gender</th>
+              {{-- <th class="text-center" style="width: 10%;">Gender</th> --}}
             @endif
             <th class="text-center" style="width: 12%;">Date</th>
             <th class="text-center" style="width: 16%;">Morning</th>
@@ -305,12 +305,12 @@
                   <div class="font-semibold">{{ $attendance->user->name }}</div>
                   <div class="text-[7px] text-gray-600">{{ $attendance->user->email }}</div>
                 </td>
-                <td class="text-center">
+                {{-- <td class="text-center">
                   <span class="gender-badge {{ $attendance->user->gender === 'male' ? 'gender-male' : 'gender-female' }}">
                     {{ $attendance->user->gender === 'male' ? '♂' : '♀' }}
                     {{ ucfirst($attendance->user->gender ?? 'N/A') }}
                   </span>
-                </td>
+                </td> --}}
               @endif
               <td class="text-center">
                 <div class="font-semibold">{{ $attendance->attendance_date->format('M d') }}</div>
@@ -361,7 +361,7 @@
                   <th class="text-center" style="width: 5%;">No</th>
                   @if(!$userId)
                     <th class="text-left" style="width: 20%;">Employee</th>
-                    <th class="text-center" style="width: 10%;">Gender</th>
+                    {{-- <th class="text-center" style="width: 10%;">Gender</th> --}}
                   @endif
                   <th class="text-center" style="width: 12%;">Date</th>
                   <th class="text-center" style="width: 16%;">Morning</th>
@@ -402,7 +402,7 @@
           <div>• Work hours are calculated from morning and afternoon sessions combined.</div>
           <div>• Morning Session: Typically 07:30 AM - 11:30 AM | Afternoon Session: Typically 02:00 PM - 05:30 PM</div>
           <div>• Status indicators: ON TIME (arrived within grace period), LATE (arrived after grace period), ABSENT (no check-in), LEAVE (scheduled day off).</div>
-          <div>• Gender information is displayed for statistical and HR purposes only.</div>
+          {{-- <div>• Gender information is displayed for statistical and HR purposes only.</div> --}}
           <div>• For discrepancies or questions, please contact the HR department.</div>
           <div>• This document is confidential and intended for authorized personnel only.</div>
         </div>

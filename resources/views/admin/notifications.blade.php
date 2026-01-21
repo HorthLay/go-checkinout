@@ -167,9 +167,7 @@
       <!-- Header -->
       <header class="h-16 md:h-20 flex items-center justify-between px-4 md:px-6 lg:px-10 bg-surface-light dark:bg-surface-dark border-b border-gray-100 dark:border-gray-800 shrink-0 z-10">
         <div class="flex items-center gap-3 lg:hidden">
-          <button id="menu-toggle" aria-label="Toggle menu" class="text-gray-500 hover:text-gray-900 dark:hover:text-white p-2">
-            <span class="material-symbols-outlined">menu</span>
-          </button>
+   
           <span class="font-bold text-base md:text-lg">Notifications</span>
         </div>
         <div class="hidden lg:block">

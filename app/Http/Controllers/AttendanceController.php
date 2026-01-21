@@ -76,7 +76,7 @@ public function index(){
             ]
         );
 
-        return redirect()->route('attendance', ['tab' => 'schedules'])
+        return redirect()->route('admin.attendance.index', ['tab' => 'schedules'])
                         ->with('success', 'Work schedule set successfully!');
     }
 
@@ -94,7 +94,7 @@ public function index(){
                                    ->exists();
 
         if ($existing) {
-            return redirect()->route('attendance', ['tab' => 'dayoffs'])
+            return redirect()->route('admin.attendance.index', ['tab' => 'dayoffs'])
                            ->with('error', 'Day off already exists for this date.');
         }
 
@@ -105,7 +105,7 @@ public function index(){
             'reason' => $request->reason,
         ]);
 
-        return redirect()->route('attendance', ['tab' => 'dayoffs'])
+        return redirect()->route('admin.attendance.index', ['tab' => 'dayoffs'])
                         ->with('success', 'Day off added successfully!');
     }
 
@@ -116,7 +116,7 @@ public function index(){
         // Delete the day off (model event will handle attendance cleanup)
         $dayOff->delete();
 
-        return redirect()->route('attendance', ['tab' => 'dayoffs'])
+        return redirect()->route('admin.attendance.index', ['tab' => 'dayoffs'])
                         ->with('success', 'Day off deleted successfully!');
     }
 
@@ -180,7 +180,7 @@ public function update(Request $request, $id)
     $attendance->calculateWorkHours();
     $attendance->save();
     
-    return redirect()->route('attendance', ['tab' => 'records'])
+    return redirect()->route('admin.attendance.index', ['tab' => 'records'])
                      ->with('success', 'Attendance record updated successfully');
 }
 
@@ -192,7 +192,7 @@ public function destroy($id)
     $attendance = Attendance::findOrFail($id);
     $attendance->delete();
     
-    return redirect()->route('admin.attendance.log', ['tab' => 'records'])
+    return redirect()->route('admin.attendance.index', ['tab' => 'records'])
                      ->with('success', 'Attendance record deleted successfully');
 }
 }

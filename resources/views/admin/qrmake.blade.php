@@ -117,6 +117,7 @@
         }
       }
 
+      /* Print styles for A4 paper */
       @media print {
         body * {
           visibility: hidden;
@@ -129,7 +130,7 @@
           left: 50%;
           top: 50%;
           transform: translate(-50%, -50%);
-          max-width: 130mm;
+          max-width: 180mm;
           box-shadow: none !important;
         }
         /* Ensure Khmer prints correctly */
@@ -137,8 +138,8 @@
           font-family: "Inter", "Noto Sans Khmer", sans-serif !important;
         }
         @page {
-          size: A5;
-          margin: 10mm;
+          size: A4;
+          margin: 15mm;
         }
       }
 
@@ -158,9 +159,7 @@
       <!-- Header -->
       <header class="h-16 md:h-20 flex items-center justify-between px-4 md:px-6 lg:px-10 bg-surface-light dark:bg-surface-dark border-b border-gray-100 dark:border-gray-800 shrink-0 z-10">
         <div class="flex items-center gap-3 lg:hidden">
-          <button id="menu-toggle" aria-label="Toggle menu" class="text-gray-500 hover:text-gray-900 dark:hover:text-white p-2">
-            <span class="material-symbols-outlined">menu</span>
-          </button>
+   
           <span class="font-bold text-base md:text-lg">QR Code</span>
         </div>
         <div class="hidden lg:block">
@@ -174,55 +173,55 @@
       @include('home.Layouts.mobile')
 
       <!-- Main Content -->
-      <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10">
+      <main class="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-10">
         <div class="max-w-6xl mx-auto">
           <!-- Instruction Cards -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
-              <div class="flex items-center gap-3 mb-2">
-                <div class="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
-                  <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">qr_code_2</span>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-6 md:mb-8">
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3 md:p-4">
+              <div class="flex items-center gap-2 md:gap-3 mb-2">
+                <div class="p-1.5 md:p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
+                  <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-lg md:text-2xl">qr_code_2</span>
                 </div>
-                <h3 class="font-semibold text-blue-900 dark:text-blue-100">Generate</h3>
+                <h3 class="font-semibold text-sm md:text-base text-blue-900 dark:text-blue-100">Generate</h3>
               </div>
-              <p class="text-sm text-blue-700 dark:text-blue-300">Create a QR code for attendance tracking</p>
+              <p class="text-xs md:text-sm text-blue-700 dark:text-blue-300">Create a QR code for attendance tracking</p>
             </div>
 
-            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
-              <div class="flex items-center gap-3 mb-2">
-                <div class="p-2 bg-green-100 dark:bg-green-800 rounded-lg">
-                  <span class="material-symbols-outlined text-green-600 dark:text-green-400">download</span>
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-3 md:p-4">
+              <div class="flex items-center gap-2 md:gap-3 mb-2">
+                <div class="p-1.5 md:p-2 bg-green-100 dark:bg-green-800 rounded-lg">
+                  <span class="material-symbols-outlined text-green-600 dark:text-green-400 text-lg md:text-2xl">download</span>
                 </div>
-                <h3 class="font-semibold text-green-900 dark:text-green-100">Download</h3>
+                <h3 class="font-semibold text-sm md:text-base text-green-900 dark:text-green-100">Download</h3>
               </div>
-              <p class="text-sm text-green-700 dark:text-green-300">Save QR code with beautiful design</p>
+              <p class="text-xs md:text-sm text-green-700 dark:text-green-300">Save QR code with beautiful design</p>
             </div>
 
-            <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-4">
-              <div class="flex items-center gap-3 mb-2">
-                <div class="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
-                  <span class="material-symbols-outlined text-purple-600 dark:text-purple-400">qr_code_scanner</span>
+            <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-3 md:p-4 sm:col-span-2 md:col-span-1">
+              <div class="flex items-center gap-2 md:gap-3 mb-2">
+                <div class="p-1.5 md:p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
+                  <span class="material-symbols-outlined text-purple-600 dark:text-purple-400 text-lg md:text-2xl">qr_code_scanner</span>
                 </div>
-                <h3 class="font-semibold text-purple-900 dark:text-purple-100">Scan</h3>
+                <h3 class="font-semibold text-sm md:text-base text-purple-900 dark:text-purple-100">Scan</h3>
               </div>
-              <p class="text-sm text-purple-700 dark:text-purple-300">Employees scan to check-in or check-out instantly</p>
+              <p class="text-xs md:text-sm text-purple-700 dark:text-purple-300">Employees scan to check-in or check-out instantly</p>
             </div>
           </div>
 
           <!-- QR Code Generator -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             <!-- Form Section -->
-            <div class="bg-surface-light dark:bg-surface-dark rounded-2xl border border-gray-100 dark:border-gray-800 p-6">
-              <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <div class="bg-surface-light dark:bg-surface-dark rounded-2xl border border-gray-100 dark:border-gray-800 p-4 md:p-6">
+              <h2 class="text-base md:text-lg font-bold text-gray-900 dark:text-white mb-4 md:mb-6 flex items-center gap-2">
                 <span class="material-symbols-outlined">settings</span>
                 QR Code Settings
               </h2>
 
-              <div class="space-y-4">
+              <div class="space-y-3 md:space-y-4">
                 <!-- QR Code Color -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">QR Code Color</label>
-                  <select id="qr-color" class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                  <label class="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">QR Code Color</label>
+                  <select id="qr-color" class="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary/20 focus:border-primary">
                     <option value="blue">Blue</option>
                     <option value="purple">Purple</option>
                     <option value="green">Green</option>
@@ -233,8 +232,8 @@
 
                 <!-- QR Code Size -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">QR Code Size</label>
-                  <select id="qr-size" class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                  <label class="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">QR Code Size</label>
+                  <select id="qr-size" class="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary/20 focus:border-primary">
                     <option value="200">Small (200x200)</option>
                     <option value="256" selected>Medium (256x256)</option>
                     <option value="300">Large (300x300)</option>
@@ -244,7 +243,7 @@
                 <!-- Generate Button -->
                 <button 
                   onclick="generateQR()"
-                  class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl font-medium transition-colors shadow-sm"
+                  class="w-full flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-3 bg-primary hover:bg-primary-dark text-white rounded-xl text-sm md:text-base font-medium transition-colors shadow-sm"
                 >
                   <span class="material-symbols-outlined">add_circle</span>
                   <span>Generate QR Code</span>
@@ -253,42 +252,42 @@
             </div>
 
             <!-- Preview Section -->
-            <div class="bg-surface-light dark:bg-surface-dark rounded-2xl border border-gray-100 dark:border-gray-800 p-6">
-              <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <div class="bg-surface-light dark:bg-surface-dark rounded-2xl border border-gray-100 dark:border-gray-800 p-4 md:p-6">
+              <h2 class="text-base md:text-lg font-bold text-gray-900 dark:text-white mb-4 md:mb-6 flex items-center gap-2">
                 <span class="material-symbols-outlined">visibility</span>
                 Preview & Download
               </h2>
 
-              <div class="flex flex-col items-center justify-center min-h-[400px]">
+              <div class="flex flex-col items-center justify-center min-h-[300px] md:min-h-[400px]">
                 <div id="qr-placeholder" class="text-center">
-                  <div class="size-32 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center">
-                    <span class="material-symbols-outlined text-6xl text-gray-400">qr_code_2</span>
+                  <div class="size-24 md:size-32 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center">
+                    <span class="material-symbols-outlined text-5xl md:text-6xl text-gray-400">qr_code_2</span>
                   </div>
-                  <p class="text-gray-500 dark:text-gray-400 text-sm">Your QR code will appear here</p>
+                  <p class="text-gray-500 dark:text-gray-400 text-xs md:text-sm">Your QR code will appear here</p>
                 </div>
 
                 <div id="qr-result" class="hidden w-full">
                   <!-- Designed QR Card for Download -->
-                  <div id="qr-design-card" class="bg-white rounded-3xl shadow-2xl p-8 max-w-md mx-auto">
+                  <div id="qr-design-card" class="bg-white rounded-2xl md:rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 max-w-md mx-auto">
                     <!-- Header -->
-                    <div class="text-center mb-6">
-                      <div class="inline-flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full mb-3">
-                        <span class="material-symbols-outlined text-primary text-xl">qr_code_scanner</span>
-                        <span class="font-bold text-primary">Attendify</span>
+                    <div class="text-center mb-4 md:mb-6">
+                      <div class="inline-flex items-center gap-2 bg-primary/10 px-3 md:px-4 py-1.5 md:py-2 rounded-full mb-2 md:mb-3">
+                        <span class="material-symbols-outlined text-primary text-lg md:text-xl">qr_code_scanner</span>
+                        <span class="font-bold text-primary text-sm md:text-base">Attendify</span>
                       </div>
-                      <h3 class="text-2xl font-bold text-gray-900 mb-1">Attendance Check-In/Out</h3>
-                      <p class="text-sm text-gray-600">Scan to record your attendance</p>
+                      <h3 class="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-1">Attendance Check-In/Out</h3>
+                      <p class="text-xs md:text-sm text-gray-600">Scan to record your attendance</p>
                     </div>
 
                     <!-- QR Code Container -->
-                    <div class="bg-white p-6 rounded-2xl shadow-inner mb-6 flex justify-center">
-                      <div id="qrcode"></div>
+                    <div class="bg-white p-4 md:p-6 rounded-xl md:rounded-2xl shadow-inner mb-4 md:mb-6 flex justify-center">
+                      <div id="qrcode" class="flex justify-center"></div>
                     </div>
 
                     <!-- Instructions -->
-                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-4 mb-4">
+                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl md:rounded-2xl p-3 md:p-4 mb-3 md:mb-4">
                       <p class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-base">info</span>
+                        <span class="material-symbols-outlined text-sm md:text-base">info</span>
                         How to Use
                       </p>
                       <ol class="text-xs text-gray-600 space-y-1 list-decimal list-inside">
@@ -299,7 +298,7 @@
                     </div>
 
                     <!-- Footer -->
-                    <div class="flex items-center justify-between text-xs text-gray-500 pt-4 border-t border-gray-200">
+                    <div class="flex items-center justify-between text-xs text-gray-500 pt-3 md:pt-4 border-t border-gray-200">
                       <span id="qr-date"></span>
                       <span>Powered by Attendify</span>
                     </div>
@@ -308,10 +307,10 @@
               </div>
 
               <!-- Action Buttons -->
-              <div id="action-buttons" class="hidden space-y-3 mt-6">
+              <div id="action-buttons" class="hidden space-y-2 md:space-y-3 mt-4 md:mt-6">
                 <button 
                   onclick="downloadDesignedQR()"
-                  class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all shadow-lg"
+                  class="w-full flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl text-sm md:text-base font-medium transition-all shadow-lg"
                 >
                   <span class="material-symbols-outlined">download</span>
                   <span>Download with Design</span>
@@ -319,7 +318,7 @@
 
                 <button 
                   onclick="downloadSimpleQR()"
-                  class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-colors"
+                  class="w-full flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm md:text-base font-medium transition-colors"
                 >
                   <span class="material-symbols-outlined">qr_code</span>
                   <span>Download QR Only</span>
@@ -327,7 +326,7 @@
 
                 <button 
                   onclick="printQR()"
-                  class="w-full flex items-center justify-center gap-2 px-6 py-3 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  class="w-full flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-3 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-sm md:text-base font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
                   <span class="material-symbols-outlined">print</span>
                   <span>Print QR Code</span>
@@ -335,7 +334,7 @@
 
                 <button 
                   onclick="resetQR()"
-                  class="w-full flex items-center justify-center gap-2 px-6 py-3 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  class="w-full flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-3 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-sm md:text-base font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
                   <span class="material-symbols-outlined">refresh</span>
                   <span>Generate New</span>
@@ -397,8 +396,8 @@
         // Clear previous QR code
         document.getElementById('qrcode').innerHTML = '';
 
-        // Generate QR data - simple URL redirect
-        const qrData = window.location.origin + '/attendance/checkinout';
+        // Generate QR data - redirect to verify route (requires authentication)
+        const qrData = window.location.origin + '/attendance/verify';
 
         // Create QR code
         currentQRCode = new QRCode(document.getElementById('qrcode'), {
@@ -436,7 +435,7 @@
           useCORS: true
         }).then(canvas => {
           const link = document.createElement('a');
-          link.download = `attendify-qrcode-designed.png`;
+          link.download = `attendify-qrcode-designed-${Date.now()}.png`;
           link.href = canvas.toDataURL('image/png');
           link.click();
         });
@@ -450,7 +449,7 @@
         }
 
         const link = document.createElement('a');
-        link.download = `attendify-qrcode.png`;
+        link.download = `attendify-qrcode-${Date.now()}.png`;
         link.href = canvas.toDataURL();
         link.click();
       }

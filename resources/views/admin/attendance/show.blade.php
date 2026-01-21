@@ -73,9 +73,7 @@
       <!-- Header -->
       <header class="h-16 md:h-20 flex items-center justify-between px-4 md:px-6 lg:px-10 bg-surface-light dark:bg-surface-dark border-b border-gray-100 dark:border-gray-800 shrink-0 z-10 no-print">
         <div class="flex items-center gap-3 lg:hidden">
-          <button id="menu-toggle" aria-label="Toggle menu" class="text-gray-500 hover:text-gray-900 dark:hover:text-white p-2">
-            <span class="material-symbols-outlined">menu</span>
-          </button>
+        
           <span class="font-bold text-base md:text-lg">View Attendance</span>
         </div>
         <div class="hidden lg:block">
@@ -95,7 +93,7 @@
         
         <!-- Back Button -->
         <div class="mb-6 no-print">
-          <a href="{{ route('attendance', ['tab' => 'records']) }}" class="inline-flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+          <a href="{{ route('admin.attendance.index', ['tab' => 'records']) }}" class="inline-flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
             <span class="material-symbols-outlined">arrow_back</span>
             <span class="text-sm font-medium">Back to Records</span>
           </a>
@@ -357,7 +355,7 @@
             </div>
             <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ $attendance->note }}</p>
           </div>
-        @endif>
+        @endif
 
         <!-- Metadata Card -->
         <div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 p-6">

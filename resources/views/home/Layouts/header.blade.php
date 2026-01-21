@@ -54,7 +54,7 @@
                         <span>Profile</span>
                     </a> --}}
                       @if(Auth::user()->role_type === 'admin')
-                      <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all">
+                      <a href="{{ route('settings') }}" class="flex items-center gap-3 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all">
                           <span class="material-symbols-outlined">settings</span>
                           <span>Settings</span>
                       </a>

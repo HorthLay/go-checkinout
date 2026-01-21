@@ -103,13 +103,12 @@ class CheckInController extends Controller
     private function processCheckIn(Request $request, OfficeLocation $officeLocation)
     {
         $user = Auth::user();
-        $session = $request->session; // 'morning' or 'afternoon'
+        $session = $request->session;
         
         $existingAttendance = Attendance::where('user_id', $user->id)
                                        ->whereDate('attendance_date', today())
                                        ->first();
         
-        // Check if already checked in for this session
         if ($existingAttendance) {
             if ($session === 'morning' && $existingAttendance->morning_check_in) {
                 return redirect()->route('checkin')->with('error', 'You have already checked in for the morning session.');
@@ -127,11 +126,36 @@ class CheckInController extends Controller
             return redirect()->route('checkin')->with('error', 'Today is your scheduled day off.');
         }
 
+        // Check time restrictions
+        $currentTime = now()->format('H:i');
+        $hasNote = !empty($request->note);
+        $timeViolation = false;
+        $violationReason = '';
+        
+        if ($session === 'morning' && $currentTime > '09:00') {
+            $timeViolation = true;
+            $violationReason = "Late check-in at {$currentTime} (allowed until 09:00)";
+            
+            if (!$hasNote) {
+                return redirect()->route('checkin')
+                               ->with('error', 'Morning check-in after 9:00 AM requires a note/reason. Please provide a note to proceed.');
+            }
+        }
+        
+        if ($session === 'afternoon' && $currentTime > '15:00') {
+            $timeViolation = true;
+            $violationReason = "Late check-in at {$currentTime} (allowed until 15:00)";
+            
+            if (!$hasNote) {
+                return redirect()->route('checkin')
+                               ->with('error', 'Afternoon check-in after 3:00 PM requires a note/reason. Please provide a note to proceed.');
+            }
+        }
+
         $schedule = AttendanceSchedule::where('user_id', $user->id)
                                      ->where('is_active', true)
                                      ->first();
 
-        // Determine if user is late for this session
         $status = 'on_time';
         if ($schedule) {
             $checkInTime = now();
@@ -149,7 +173,11 @@ class CheckInController extends Controller
             }
         }
 
-        // Update or create attendance record
+        // Override status if there's a time violation
+        if ($timeViolation) {
+            $status = 'late';
+        }
+
         $checkInField = $session === 'morning' ? 'morning_check_in' : 'afternoon_check_in';
         
         $attendanceData = [
@@ -157,14 +185,19 @@ class CheckInController extends Controller
             'attendance_date' => today(),
         ];
 
+        // Prepare note with violation reason if applicable
+        $finalNote = $request->note;
+        if ($timeViolation && $hasNote) {
+            $finalNote = "[{$violationReason}] {$request->note}";
+        }
+
         $updateData = [
             $checkInField => now(),
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
-            'note' => $request->note,
+            'note' => $finalNote,
         ];
 
-        // Only update status if it's not already 'late' (late status should persist)
         if (!$existingAttendance || $existingAttendance->status !== 'late') {
             $updateData['status'] = $status;
         }
@@ -172,27 +205,30 @@ class CheckInController extends Controller
         $attendance = Attendance::updateOrCreate($attendanceData, $updateData);
         $attendance->refresh();
 
-        // Send Telegram Notifications
         $this->sendCheckInNotifications($user, $attendance, $officeLocation, $schedule, $session);
-
-        // Create In-App Notifications for Admins
         $this->createCheckInNotifications($user, $attendance, $officeLocation, $session);
 
         $sessionName = ucfirst($session);
-        return redirect()->route('checkin')
-                       ->with('success', "{$sessionName} check-in successful at {$officeLocation->name}! Status: " . ucfirst(str_replace('_', ' ', $status)));
+        $successMessage = "{$sessionName} check-in successful at {$officeLocation->name}!";
+        
+        if ($timeViolation) {
+            $successMessage .= " (Late check-in recorded with reason)";
+        } else {
+            $successMessage .= " Status: " . ucfirst(str_replace('_', ' ', $status));
+        }
+        
+        return redirect()->route('checkin')->with('success', $successMessage);
     }
 
     private function processCheckOut(Request $request, OfficeLocation $officeLocation)
     {
         $user = Auth::user();
-        $session = $request->session; // 'morning' or 'afternoon'
+        $session = $request->session;
         
         $attendance = Attendance::where('user_id', $user->id)
                                ->whereDate('attendance_date', today())
                                ->first();
         
-        // Check if user has checked in for this session
         $checkInField = $session === 'morning' ? 'morning_check_in' : 'afternoon_check_in';
         $checkOutField = $session === 'morning' ? 'morning_check_out' : 'afternoon_check_out';
         
@@ -206,26 +242,66 @@ class CheckInController extends Controller
             return redirect()->route('checkin')->with('error', "You have already checked out for the {$session} session.");
         }
 
+        // Check early checkout restrictions
+        $currentTime = now()->format('H:i');
+        $hasNote = !empty($request->note);
+        $earlyCheckout = false;
+        $checkoutReason = '';
+        
+        if ($session === 'morning' && $currentTime < '11:00') {
+            $earlyCheckout = true;
+            $checkoutReason = "Early check-out at {$currentTime} (minimum 11:00)";
+            
+            if (!$hasNote) {
+                return redirect()->route('checkin')
+                               ->with('error', 'Morning check-out before 11:00 AM requires a note/reason. Please provide a note to proceed or you will be marked absent.');
+            }
+        }
+        
+        if ($session === 'afternoon' && $currentTime < '17:00') {
+            $earlyCheckout = true;
+            $checkoutReason = "Early check-out at {$currentTime} (minimum 17:00)";
+            
+            if (!$hasNote) {
+                return redirect()->route('checkin')
+                               ->with('error', 'Afternoon check-out before 5:00 PM requires a note/reason. Please provide a note to proceed or you will be marked absent.');
+            }
+        }
+
+        // Prepare note with checkout reason if applicable
+        $finalNote = $request->note ?? $attendance->note;
+        if ($earlyCheckout && $hasNote) {
+            $existingNote = $attendance->note ?? '';
+            if ($existingNote) {
+                $finalNote = $existingNote . " | [{$checkoutReason}] {$request->note}";
+            } else {
+                $finalNote = "[{$checkoutReason}] {$request->note}";
+            }
+        }
+
         $attendance->update([
             $checkOutField => now(),
-            'note' => $request->note ?? $attendance->note,
+            'note' => $finalNote,
         ]);
 
-        // Calculate work hours for both sessions
+        // Calculate work hours
         $attendance->calculateWorkHours();
         $attendance->refresh();
 
-        // Send Telegram Notifications
+        // Send notifications
         $this->sendCheckOutNotifications($user, $attendance, $officeLocation, $session);
-
-        // Create In-App Notifications for Admins
         $this->createCheckOutNotifications($user, $attendance, $officeLocation, $session);
 
         $sessionName = ucfirst($session);
         $sessionHours = $session === 'morning' ? $attendance->formatted_morning_hours : $attendance->formatted_afternoon_hours;
         
-        return redirect()->route('checkin')
-                       ->with('success', "{$sessionName} check-out successful at {$officeLocation->name}! Session hours: {$sessionHours} | Total today: " . $attendance->formatted_work_hours);
+        $successMessage = "{$sessionName} check-out successful at {$officeLocation->name}! Session hours: {$sessionHours} | Total today: " . $attendance->formatted_work_hours;
+        
+        if ($earlyCheckout) {
+            $successMessage .= " (Early check-out recorded with reason)";
+        }
+        
+        return redirect()->route('checkin')->with('success', $successMessage);
     }
 
     /**
@@ -293,12 +369,19 @@ class CheckInController extends Controller
                 ? "⚠️ Late {$sessionName} Check-In: {$user->name}" 
                 : "{$sessionIcon} {$sessionName} Check-In: {$user->name}";
             
+            $message = "{$user->name} checked in for {$session} session at {$checkInTime->format('h:i A')} at {$officeLocation->name}";
+            
+            // Add note info if present
+            if ($attendance->note) {
+                $message .= " | Note: {$attendance->note}";
+            }
+            
             foreach ($admins as $admin) {
                 Notification::create([
                     'user_id' => $admin->id,
                     'type' => $notificationType,
                     'title' => $title,
-                    'message' => "{$user->name} checked in for {$session} session at {$checkInTime->format('h:i A')} at {$officeLocation->name}",
+                    'message' => $message,
                     'data' => [
                         'attendance_id' => $attendance->id,
                         'employee_id' => $user->id,
@@ -308,6 +391,7 @@ class CheckInController extends Controller
                         'time' => $checkInTime->format('h:i A'),
                         'location' => $officeLocation->name,
                         'status' => $attendance->status,
+                        'note' => $attendance->note,
                         'coordinates' => [
                             'lat' => $attendance->latitude,
                             'lng' => $attendance->longitude,
@@ -335,12 +419,19 @@ class CheckInController extends Controller
             $sessionIcon = $session === 'morning' ? '🌞' : '🌅';
             $sessionName = ucfirst($session);
             
+            $message = "{$user->name} checked out from {$session} session at {$checkOutTime->format('h:i A')} • {$sessionHours} worked • Total today: {$attendance->formatted_work_hours}";
+            
+            // Add note info if present
+            if ($attendance->note) {
+                $message .= " | Note: {$attendance->note}";
+            }
+            
             foreach ($admins as $admin) {
                 Notification::create([
                     'user_id' => $admin->id,
                     'type' => 'checkout',
                     'title' => "{$sessionIcon} {$sessionName} Check-Out: {$user->name}",
-                    'message' => "{$user->name} checked out from {$session} session at {$checkOutTime->format('h:i A')} • {$sessionHours} worked • Total today: {$attendance->formatted_work_hours}",
+                    'message' => $message,
                     'data' => [
                         'attendance_id' => $attendance->id,
                         'employee_id' => $user->id,
@@ -352,6 +443,7 @@ class CheckInController extends Controller
                         'session_hours' => $sessionHours,
                         'total_work_hours' => $attendance->formatted_work_hours,
                         'status' => $attendance->status,
+                        'note' => $attendance->note,
                     ],
                 ]);
             }

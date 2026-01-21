@@ -586,4 +586,129 @@ class Attendance extends Model
         
         return implode(', ', $formatted);
     }
+
+    /**
+     * Check and mark attendance as absent based on rules
+     * Rules:
+     * 1. Morning check-in after 9:00 AM → Mark morning as absent
+     * 2. Morning check-out before 11:00 AM → Mark morning as absent
+     * 3. No morning check-out by 2:00 PM → Mark morning as absent
+     * 4. Afternoon check-in after 3:00 PM → Mark afternoon as absent
+     * 5. Afternoon check-out before 5:00 PM → Mark afternoon as absent
+     * 6. No afternoon check-out by 5:30 PM → Mark afternoon as absent
+     * 7. Morning check-in without check-out (after 2:00 PM) → Mark morning as absent (nullify both)
+     * 8. Afternoon check-in without check-out (after 5:30 PM) → Mark afternoon as absent (nullify both)
+     */
+    public function checkAndMarkAbsent()
+    {
+        $changes = [];
+        $now = now();
+        $currentTime = $now->format('H:i');
+        
+        // Morning Session Rules
+        if ($this->morning_check_in) {
+            $morningCheckIn = Carbon::parse($this->morning_check_in);
+            
+            // Rule 1: If check-in is after 9:00 AM → Mark as absent
+            if ($morningCheckIn->format('H:i') > '09:00') {
+                $this->morning_check_in = null;
+                $this->morning_check_out = null;
+                $changes[] = 'Morning check-in after 9:00 AM';
+            }
+            // Rule 3 & 7: If no morning check-out and afternoon session has started (after 2:00 PM) → Mark morning as absent
+            elseif (!$this->morning_check_out && $currentTime >= '14:00') {
+                $this->morning_check_in = null;
+                $this->morning_check_out = null;
+                $changes[] = 'Morning check-in without check-out';
+            }
+        }
+        
+        if ($this->morning_check_out && $this->morning_check_in) {
+            $morningCheckOut = Carbon::parse($this->morning_check_out);
+            
+            // Rule 2: If check-out is before 11:00 AM → Mark as absent
+            if ($morningCheckOut->format('H:i') < '11:00') {
+                $this->morning_check_in = null;
+                $this->morning_check_out = null;
+                $changes[] = 'Morning check-out before 11:00 AM';
+            }
+        }
+        
+        // Afternoon Session Rules
+        if ($this->afternoon_check_in) {
+            $afternoonCheckIn = Carbon::parse($this->afternoon_check_in);
+            
+            // Rule 4: If check-in is after 3:00 PM (15:00) → Mark as absent
+            if ($afternoonCheckIn->format('H:i') > '15:00') {
+                $this->afternoon_check_in = null;
+                $this->afternoon_check_out = null;
+                $changes[] = 'Afternoon check-in after 3:00 PM';
+            }
+            // Rule 6 & 8: If no afternoon check-out and it's past end of work day (after 5:30 PM) → Mark afternoon as absent
+            elseif (!$this->afternoon_check_out && $currentTime >= '17:30') {
+                $this->afternoon_check_in = null;
+                $this->afternoon_check_out = null;
+                $changes[] = 'Afternoon check-in without check-out';
+            }
+        }
+        
+        if ($this->afternoon_check_out && $this->afternoon_check_in) {
+            $afternoonCheckOut = Carbon::parse($this->afternoon_check_out);
+            
+            // Rule 5: If check-out is before 5:00 PM (17:00) → Mark as absent
+            if ($afternoonCheckOut->format('H:i') < '17:00') {
+                $this->afternoon_check_in = null;
+                $this->afternoon_check_out = null;
+                $changes[] = 'Afternoon check-out before 5:00 PM';
+            }
+        }
+        
+        // Update status if any changes were made
+        if (!empty($changes)) {
+            // Check if both sessions are now null
+            if (!$this->morning_check_in && !$this->afternoon_check_in) {
+                $this->status = 'absent';
+                $this->absent_note = 'Automatically marked absent: ' . implode(', ', $changes);
+            } elseif (!$this->morning_check_in || !$this->afternoon_check_in) {
+                $this->status = 'half_day';
+                $this->absent_note = 'Half day: ' . implode(', ', $changes);
+            }
+            
+            // Recalculate work hours
+            $this->calculateWorkHours();
+            $this->save();
+        }
+        
+        return $changes;
+    }
+
+    /**
+     * Auto-check for missing check-outs and mark as absent
+     * Should be called via scheduled task
+     */
+    public static function autoCheckMissingCheckouts()
+    {
+        $today = now()->format('Y-m-d');
+        $currentTime = now()->format('H:i');
+        
+        // Check for missing morning check-outs (after 2:00 PM)
+        if ($currentTime >= '14:00') {
+            Attendance::whereDate('attendance_date', $today)
+                      ->whereNotNull('morning_check_in')
+                      ->whereNull('morning_check_out')
+                      ->each(function ($attendance) {
+                          $attendance->checkAndMarkAbsent();
+                      });
+        }
+        
+        // Check for missing afternoon check-outs (after 5:30 PM)
+        if ($currentTime >= '17:30') {
+            Attendance::whereDate('attendance_date', $today)
+                      ->whereNotNull('afternoon_check_in')
+                      ->whereNull('afternoon_check_out')
+                      ->each(function ($attendance) {
+                          $attendance->checkAndMarkAbsent();
+                      });
+        }
+    }
 }

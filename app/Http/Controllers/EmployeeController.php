@@ -36,7 +36,7 @@ class EmployeeController extends Controller
             'phone' => 'nullable|string|max:20',
             'password' => 'required|string|min:8',
             'role_type' => 'required|in:user,admin',
-            'gender' => 'required|in:male,female',
+            // 'gender' => 'required|in:male,female',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // 2MB max
         ]);
 
@@ -78,7 +78,7 @@ class EmployeeController extends Controller
             'email' => 'nullable|email|unique:users,email,' . $id,
             'phone' => 'nullable|string|max:20',
             'role_type' => 'required|in:user,admin',
-            'gender' => 'required|in:male,female',
+            // 'gender' => 'required|in:male,female',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
