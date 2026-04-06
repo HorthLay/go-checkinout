@@ -154,16 +154,6 @@
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">This month</p>
           </div>
 
-          <!-- Total Late -->
-          <div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 p-3 md:p-4">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Late</span>
-              <span class="material-symbols-outlined text-orange-600 dark:text-orange-400 text-lg md:text-xl">schedule</span>
-            </div>
-            <p class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">{{ $totalLate }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">This month</p>
-          </div>
-
           <!-- Total Absent -->
           <div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 p-3 md:p-4">
             <div class="flex items-center justify-between mb-2">
@@ -181,6 +171,16 @@
               <span class="material-symbols-outlined text-purple-600 dark:text-purple-400 text-lg md:text-xl">event_available</span>
             </div>
             <p class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">{{ $totalLeave }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">This month</p>
+          </div>
+
+          <!-- Total Missions -->
+          <div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 p-3 md:p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Missions</span>
+              <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-lg md:text-xl">work</span>
+            </div>
+            <p class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">{{ $monthlyMissions->flatten()->count() }}</p>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">This month</p>
           </div>
         </div>
@@ -256,7 +256,7 @@
         @endif
 
         <!-- Today's Status -->
-        @if($todayAttendance)
+        @if($todayAttendance || $todayMissions->count() > 0)
           <div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 p-4 md:p-6 mb-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <div class="flex items-center gap-3">
@@ -264,10 +264,11 @@
                   <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">today</span>
                 </div>
                 <div class="min-w-0">
-                  <h3 class="text-base md:text-lg font-bold text-gray-900 dark:text-white">Today's Attendance</h3>
+                  <h3 class="text-base md:text-lg font-bold text-gray-900 dark:text-white">Today's Activity</h3>
                   <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ now()->format('l, F j, Y') }}</p>
                 </div>
               </div>
+              @if($todayAttendance)
               <span class="inline-flex items-center px-2.5 py-1.5 md:px-3 rounded-lg text-xs md:text-sm font-medium shrink-0 self-start sm:self-auto
                 {{ $todayAttendance->status === 'on_time' ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' : '' }}
                 {{ $todayAttendance->status === 'late' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' : '' }}
@@ -276,8 +277,10 @@
               ">
                 {{ ucfirst(str_replace('_', ' ', $todayAttendance->status)) }}
               </span>
+              @endif
             </div>
             
+            @if($todayAttendance)
             <!-- Morning and Afternoon Sessions -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <!-- Morning Session -->
@@ -332,7 +335,7 @@
             </div>
 
             <!-- Total Hours -->
-            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                   <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">timer</span>
@@ -343,8 +346,47 @@
                 </span>
               </div>
             </div>
+            @endif
 
-            @if($todayAttendance->note)
+            <!-- Today's Missions -->
+            @if($todayMissions->count() > 0)
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+              <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">work</span>
+                Today's Missions ({{ $todayMissions->count() }})
+              </h4>
+              <div class="space-y-2">
+                @foreach($todayMissions as $mission)
+                <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                  <div class="flex items-start justify-between gap-2 mb-2">
+                    <div class="min-w-0 flex-1">
+                      <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ $mission->location_name }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">Created: {{ $mission->created_at->format('h:i A') }}</p>
+                    </div>
+                    <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium shrink-0
+                      {{ $mission->status === 'approved' ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' : '' }}
+                      {{ $mission->status === 'pending' ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400' : '' }}
+                      {{ $mission->status === 'rejected' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' : '' }}
+                    ">
+                      {{ ucfirst($mission->status) }}
+                    </span>
+                  </div>
+                  @if($mission->check_in_time)
+                  <div class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                    <span class="material-symbols-outlined text-sm">schedule</span>
+                    <span>Checked in: {{ \Carbon\Carbon::parse($mission->check_in_time)->format('h:i A') }}</span>
+                  </div>
+                  @endif
+                  @if($mission->description)
+                  <p class="text-xs text-gray-600 dark:text-gray-300 mt-2">{{ Str::limit($mission->description, 80) }}</p>
+                  @endif
+                </div>
+                @endforeach
+              </div>
+            </div>
+            @endif
+
+            @if($todayAttendance && $todayAttendance->note)
               <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Note</p>
                 <p class="text-sm text-gray-900 dark:text-white break-words">{{ $todayAttendance->note }}</p>
@@ -378,8 +420,8 @@
           <div class="p-4 md:p-6 border-b border-gray-100 dark:border-gray-800">
             <div class="flex flex-col gap-4">
               <div>
-                <h3 class="text-base md:text-lg font-bold text-gray-900 dark:text-white">Attendance History</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Your attendance records</p>
+                <h3 class="text-base md:text-lg font-bold text-gray-900 dark:text-white">Attendance & Mission History</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Your attendance records and field missions</p>
               </div>
 
               <!-- Filter Controls -->
@@ -416,12 +458,17 @@
                   <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Afternoon</th>
                   <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hours</th>
                   <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                  <th class="text-left py-4 px-6 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Missions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                 @forelse($monthlyAttendance as $attendance)
+                  @php
+                    $dateKey = $attendance->attendance_date->format('Y-m-d');
+                    $dayMissions = $monthlyMissions[$dateKey] ?? collect([]);
+                  @endphp
                   <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors attendance-row"
-                      data-date="{{ $attendance->attendance_date->format('Y-m-d') }}"
+                      data-date="{{ $dateKey }}"
                       data-status="{{ $attendance->status }}">
                     <td class="py-4 px-6">
                       <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $attendance->attendance_date->format('M d, Y') }}</p>
@@ -461,10 +508,38 @@
                         {{ ucfirst(str_replace('_', ' ', $attendance->status)) }}
                       </span>
                     </td>
+                    <td class="py-4 px-6">
+                      @if($dayMissions->count() > 0)
+                        <div class="space-y-1.5">
+                          @foreach($dayMissions->take(2) as $mission)
+                            <div class="flex flex-col gap-0.5">
+                              <div class="flex items-center gap-2">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                  {{ $mission->status === 'approved' ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' : '' }}
+                                  {{ $mission->status === 'pending' ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400' : '' }}
+                                  {{ $mission->status === 'rejected' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' : '' }}
+                                ">
+                                  {{ ucfirst($mission->status) }}
+                                </span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">{{ $mission->created_at->format('h:i A') }}</span>
+                              </div>
+                              @if($mission->check_in_time)
+                                <span class="text-xs text-gray-500 dark:text-gray-400 ml-0.5">✓ Check-in: {{ \Carbon\Carbon::parse($mission->check_in_time)->format('h:i A') }}</span>
+                              @endif
+                            </div>
+                          @endforeach
+                          @if($dayMissions->count() > 2)
+                            <p class="text-xs text-gray-500 dark:text-gray-400">+{{ $dayMissions->count() - 2 }} more</p>
+                          @endif
+                        </div>
+                      @else
+                        <span class="text-xs text-gray-400">—</span>
+                      @endif
+                    </td>
                   </tr>
                 @empty
                   <tr>
-                    <td colspan="5" class="py-12 text-center">
+                    <td colspan="6" class="py-12 text-center">
                       <div class="flex flex-col items-center gap-3">
                         <span class="material-symbols-outlined text-5xl text-gray-300">event_busy</span>
                         <p class="text-gray-500 dark:text-gray-400">No attendance records found</p>
@@ -479,8 +554,12 @@
           <!-- Mobile Cards -->
           <div id="mobileRecordsContainer" class="md:hidden divide-y divide-gray-100 dark:divide-gray-800">
             @forelse($monthlyAttendance as $attendance)
+              @php
+                $dateKey = $attendance->attendance_date->format('Y-m-d');
+                $dayMissions = $monthlyMissions[$dateKey] ?? collect([]);
+              @endphp
               <div class="p-4 attendance-row"
-                   data-date="{{ $attendance->attendance_date->format('Y-m-d') }}"
+                   data-date="{{ $dateKey }}"
                    data-status="{{ $attendance->status }}">
                 <div class="flex items-start justify-between gap-2 mb-3">
                   <div class="min-w-0 flex-1">
@@ -520,11 +599,41 @@
                 </div>
 
                 <!-- Total Hours -->
-                <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
+                <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 mb-3">
                   <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Hours</p>
                   <p class="text-sm font-bold text-gray-900 dark:text-white">{{ $attendance->formatted_work_hours ?? '—' }}</p>
                   <p class="text-xs text-gray-500 dark:text-gray-400">M: {{ $attendance->formatted_morning_hours }} | A: {{ $attendance->formatted_afternoon_hours }}</p>
                 </div>
+
+                <!-- Missions for this day -->
+                @if($dayMissions->count() > 0)
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
+                  <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">work</span>
+                    Missions ({{ $dayMissions->count() }})
+                  </p>
+                  <div class="space-y-2">
+                    @foreach($dayMissions as $mission)
+                      <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
+                        <div class="flex items-start justify-between gap-2 mb-1">
+                          <p class="text-xs font-medium text-gray-900 dark:text-white truncate flex-1">{{ $mission->location_name }}</p>
+                          <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium shrink-0
+                            {{ $mission->status === 'approved' ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' : '' }}
+                            {{ $mission->status === 'pending' ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400' : '' }}
+                            {{ $mission->status === 'rejected' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' : '' }}
+                          ">
+                            {{ ucfirst($mission->status) }}
+                          </span>
+                        </div>
+                        @if($mission->check_in_time)
+                          <p class="text-xs text-gray-600 dark:text-gray-300">Check-in: {{ \Carbon\Carbon::parse($mission->check_in_time)->format('h:i A') }}</p>
+                        @endif
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Created: {{ $mission->created_at->format('h:i A') }}</p>
+                      </div>
+                    @endforeach
+                  </div>
+                </div>
+                @endif
               </div>
             @empty
               <div class="py-12 text-center">

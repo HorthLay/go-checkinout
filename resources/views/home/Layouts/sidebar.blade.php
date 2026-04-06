@@ -48,6 +48,13 @@
         <span class="material-symbols-outlined {{ request()->routeIs('attendance') ? '' : 'text-gray-500 group-hover:text-primary' }} transition-colors">how_to_reg</span>
         <span class="font-medium {{ request()->routeIs('attendance') ? '' : 'group-hover:text-gray-900 dark:group-hover:text-white' }} transition-colors">My Schedule</span>
       </a>
+
+      {{-- My Mission --}}
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('missions.my') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all group" 
+         href="{{ route('missions.my') }}">
+        <span class="material-symbols-outlined {{ request()->routeIs('missions.my') ? '' : 'text-gray-500 group-hover:text-primary' }} transition-colors">target</span>
+        <span class="font-medium {{ request()->routeIs('missions.my') ? '' : 'group-hover:text-gray-900 dark:group-hover:text-white' }} transition-colors">My Mission</span>
+      </a>
     @endif
     
     {{-- QR Code (Admin Only) --}}
@@ -75,6 +82,14 @@
          href="{{ route('employees') }}">
         <span class="material-symbols-outlined {{ request()->routeIs('employees*') ? '' : 'text-gray-500 group-hover:text-primary' }} transition-colors">group</span>
         <span class="font-medium {{ request()->routeIs('employees*') ? '' : 'group-hover:text-gray-900 dark:group-hover:text-white' }} transition-colors">Employees</span>
+      </a>
+
+
+      {{-- Mission --}}
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('mission') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all group" 
+         href="{{ route('mission') }}">
+        <span class="material-symbols-outlined {{ request()->routeIs('mission') ? '' : 'text-gray-500 group-hover:text-primary' }} transition-colors">task_alt</span>
+        <span class="font-medium {{ request()->routeIs('mission') ? '' : 'group-hover:text-gray-900 dark:group-hover:text-white' }} transition-colors">Mission</span>
       </a>
 
         {{-- Map --}}

@@ -375,22 +375,7 @@ class TelegramService
     /**
      * Send notification to multiple admins
      */
-    public function notifyAdmins($message)
-    {
-        $adminUsers = User::where('role_type', 'admin')
-                         ->whereNotNull('telegram_chat_id')
-                         ->get();
-
-        $sentCount = 0;
-        foreach ($adminUsers as $admin) {
-            if ($this->sendMessage($admin->telegram_chat_id, $message)) {
-                $sentCount++;
-            }
-        }
-
-        Log::info("Notification sent to {$sentCount} admins");
-        return $sentCount;
-    }
+   
 
     /**
      * Send notification to specific user
@@ -443,4 +428,213 @@ class TelegramService
             return false;
         }
     }
+
+       public function sendMissionNotificationWithButtons($chatId, $user, $mission)
+    {
+        try {
+            $message = $this->sendMissionCheckInNotification($user, $mission);
+            
+            $keyboard = [
+                'inline_keyboard' => [
+                    [
+                        [
+                            'text' => '✅ អនុម័ត / Approve',
+                            'callback_data' => "approve_mission_{$mission->id}"
+                        ],
+                        [
+                            'text' => '❌ បដិសេធ / Reject',
+                            'callback_data' => "reject_mission_{$mission->id}"
+                        ]
+                    ],
+                    [
+                        [
+                            'text' => '📍 មើលទីតាំង / View Location',
+                            'url' => "https://www.google.com/maps?q={$mission->latitude},{$mission->longitude}"
+                        ]
+                    ],
+                    [
+                        [
+                            'text' => '📊 មើលព័ត៌មានលម្អិត / View Details',
+                            'url' => route('mission')
+                        ]
+                    ]
+                ]
+            ];
+
+            $response = Http::timeout(10)->post("{$this->apiUrl}/sendMessage", [
+                'chat_id' => $chatId,
+                'text' => $message,
+                'parse_mode' => 'HTML',
+                'disable_web_page_preview' => false,
+                'reply_markup' => json_encode($keyboard),
+            ]);
+
+            if ($response->successful()) {
+                Log::info("Mission notification with buttons sent to {$chatId} for mission #{$mission->id}");
+                return true;
+            }
+
+            Log::error("Failed to send mission notification to {$chatId}: " . $response->body());
+            return false;
+        } catch (\Exception $e) {
+            Log::error("Telegram mission notification error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Send mission check-in notification message
+     */
+    public function sendMissionCheckInNotification($user, $mission)
+    {
+        $dayEn = $mission->mission_date->format('l');
+        $dayKh = $this->getDayInKhmer($mission->mission_date->dayOfWeek);
+        
+        $message = "📋 <b>ការស្នើសុំចូលធ្វើការបេសកកម្ម / MISSION CHECK-IN REQUEST</b>\n";
+        $message .= "━━━━━━━━━━━━━━━━━━━━━━\n\n";
+        
+        $message .= "👤 <b>ព័ត៌មានបុគ្គលិក / Employee Information</b>\n";
+        $message .= "   ឈ្មោះ / Name: {$user->name}\n";
+        $message .= "   អ៊ីមែល / Email: {$user->email}\n";
+        if ($user->phone) {
+            $message .= "   លេខទូរស័ព្ទ / Phone: {$user->phone}\n";
+        }
+        $message .= "\n";
+        
+        $message .= "📅 <b>កាលបរិច្ឆេទ និងពេលវេលា / Date & Time</b>\n";
+        $message .= "   កាលបរិច្ឆេទ / Date: {$dayKh} / {$dayEn}, " . $mission->mission_date->format('F j, Y') . "\n";
+        $message .= "   ពេលវេលាស្នើសុំ / Request Time: " . $mission->created_at->format('h:i A') . "\n";
+        $message .= "   🕐 " . $mission->created_at->diffForHumans() . "\n";
+        $message .= "\n";
+        
+        $message .= "📍 <b>ព័ត៌មានទីតាំង / Location Details</b>\n";
+        $message .= "   កូអរដោនេ / Coordinates:\n";
+        $message .= "   • Latitude: {$mission->latitude}\n";
+        $message .= "   • Longitude: {$mission->longitude}\n";
+        $message .= "   🗺️ <a href='https://www.google.com/maps?q={$mission->latitude},{$mission->longitude}'>View on Google Maps</a>\n";
+        $message .= "\n";
+        
+        $message .= "⏳ <b>ស្ថានភាព / Status</b>\n";
+        $message .= "   🟡 រង់ចាំការអនុម័ត / Pending Approval\n";
+        $message .= "\n";
+        
+        $message .= "📝 <b>សកម្មភាពត្រូវការ / Action Required</b>\n";
+        $message .= "   សូមពិនិត្យនិងអនុម័តការចូលធ្វើការបេសកកម្មនេះ\n";
+        $message .= "   Please review and approve this mission check-in\n";
+        
+        $message .= "\n━━━━━━━━━━━━━━━━━━━━━━";
+        $message .= "\n<i>ប្រព័ន្ធ Attendify / Attendify System • ID: #{$mission->id}</i>";
+
+        return $message;
+    }
+
+    /**
+     * Notify all admins about new mission check-in
+     */
+    public function notifyAdminsAboutMission($user, $mission)
+    {
+        $adminUsers = User::where('role_type', 'admin')
+                         ->whereNotNull('telegram_chat_id')
+                         ->get();
+
+        $sentCount = 0;
+        foreach ($adminUsers as $admin) {
+            if ($this->sendMissionNotificationWithButtons($admin->telegram_chat_id, $user, $mission)) {
+                $sentCount++;
+            }
+        }
+
+        Log::info("Mission notification sent to {$sentCount} admins for mission #{$mission->id}");
+        return $sentCount;
+    }
+
+    /**
+     * Notify admins that a mission was approved (by another admin via website)
+     */
+    public function notifyAdminsAboutApproval($mission, $adminName)
+    {
+        $dayEn = $mission->mission_date->format('l');
+        $dayKh = $this->getDayInKhmer($mission->mission_date->dayOfWeek);
+        
+        $message = "✅ <b>បេសកកម្មត្រូវបានអនុម័ត / MISSION APPROVED</b>\n";
+        $message .= "━━━━━━━━━━━━━━━━━━━━━━\n\n";
+        
+        $message .= "📋 <b>ព័ត៌មានបេសកកម្ម / Mission Information</b>\n";
+        $message .= "   👤 បុគ្គលិក / Employee: {$mission->user->name}\n";
+        $message .= "   📧 អ៊ីមែល / Email: {$mission->user->email}\n";
+        $message .= "   📅 កាលបរិច្ឆេទ / Date: {$dayKh} / {$dayEn}, " . $mission->mission_date->format('F j, Y') . "\n";
+        $message .= "   🕐 ពេលវេលាស្នើសុំ / Request Time: " . $mission->created_at->format('h:i A') . "\n";
+        $message .= "\n";
+        
+        if ($mission->attendance && $mission->attendance->work_hours) {
+            $message .= "⏱️ <b>ម៉ោងធ្វើការ / Work Hours:</b> {$mission->attendance->formatted_work_hours}\n\n";
+        }
+        
+        $message .= "📍 <b>ទីតាំង / Location:</b>\n";
+        $message .= "   🗺️ <a href='https://www.google.com/maps?q={$mission->latitude},{$mission->longitude}'>View on Google Maps</a>\n\n";
+        
+        $message .= "✅ <b>សកម្មភាព / Action Taken</b>\n";
+        $message .= "   ស្ថានភាព / Status: បានអនុម័ត / APPROVED\n";
+        $message .= "   👤 អនុម័តដោយ / Approved By: {$adminName}\n";
+        $message .= "   🕐 ពេលវេលា / Time: " . now()->format('h:i A') . "\n";
+        
+        $message .= "\n━━━━━━━━━━━━━━━━━━━━━━";
+        $message .= "\n<i>ប្រព័ន្ធ Attendify / Attendify System • Mission ID: #{$mission->id}</i>";
+
+        return $this->notifyAdmins($message);
+    }
+
+    /**
+     * Notify admins that a mission was rejected (by another admin via website)
+     */
+    public function notifyAdminsAboutRejection($mission, $adminName, $reason)
+    {
+        $dayEn = $mission->mission_date->format('l');
+        $dayKh = $this->getDayInKhmer($mission->mission_date->dayOfWeek);
+        
+        $message = "❌ <b>បេសកកម្មត្រូវបានបដិសេធ / MISSION REJECTED</b>\n";
+        $message .= "━━━━━━━━━━━━━━━━━━━━━━\n\n";
+        
+        $message .= "📋 <b>ព័ត៌មានបេសកកម្ម / Mission Information</b>\n";
+        $message .= "   👤 បុគ្គលិក / Employee: {$mission->user->name}\n";
+        $message .= "   📧 អ៊ីមែល / Email: {$mission->user->email}\n";
+        $message .= "   📅 កាលបរិច្ឆេទ / Date: {$dayKh} / {$dayEn}, " . $mission->mission_date->format('F j, Y') . "\n";
+        $message .= "   🕐 ពេលវេលាស្នើសុំ / Request Time: " . $mission->created_at->format('h:i A') . "\n";
+        $message .= "\n";
+        
+        $message .= "📝 <b>មូលហេតុ / Rejection Reason:</b>\n";
+        $message .= "   " . $this->escapeHtml($reason) . "\n\n";
+        
+        $message .= "📍 <b>ទីតាំង / Location:</b>\n";
+        $message .= "   🗺️ <a href='https://www.google.com/maps?q={$mission->latitude},{$mission->longitude}'>View on Google Maps</a>\n\n";
+        
+        $message .= "❌ <b>សកម្មភាព / Action Taken</b>\n";
+        $message .= "   ស្ថានភាព / Status: បានបដិសេធ / REJECTED\n";
+        $message .= "   👤 បដិសេធដោយ / Rejected By: {$adminName}\n";
+        $message .= "   🕐 ពេលវេលា / Time: " . now()->format('h:i A') . "\n";
+        
+        $message .= "\n━━━━━━━━━━━━━━━━━━━━━━";
+        $message .= "\n<i>ប្រព័ន្ធ Attendify / Attendify System • Mission ID: #{$mission->id}</i>";
+
+        return $this->notifyAdmins($message);
+    }
+
+
+     public function notifyAdmins($message)
+    {
+        $adminUsers = User::where('role_type', 'admin')
+                         ->whereNotNull('telegram_chat_id')
+                         ->get();
+
+        $sentCount = 0;
+        foreach ($adminUsers as $admin) {
+            if ($this->sendMessage($admin->telegram_chat_id, $message)) {
+                $sentCount++;
+            }
+        }
+
+        Log::info("Notification sent to {$sentCount} admins");
+        return $sentCount;
+    }
+
 }

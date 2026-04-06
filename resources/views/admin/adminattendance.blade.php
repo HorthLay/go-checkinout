@@ -345,316 +345,347 @@
         </div>
 
         <!-- All Records Tab -->
-        <div id="content-records" class="tab-content {{ $activeTab === 'records' ? '' : 'hidden' }}">
-          <div class="mb-4 md:mb-6">
-            <div class="flex flex-col gap-3 md:gap-4">
-              <h2 class="text-base md:text-lg font-bold text-gray-900 dark:text-white">All Attendance Records</h2>
-              <div class="flex flex-col gap-2 md:gap-3">
-                <div class="flex flex-col sm:flex-row gap-2 md:gap-3">
-                  <div class="relative flex-1">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                      <span class="material-symbols-outlined text-base md:text-[20px]">search</span>
-                    </span>
-                    <input type="text" id="searchRecords" placeholder="Search employee..." class="w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 text-sm rounded-lg md:rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-                  </div>
-                  <div class="relative flex-1">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                      <span class="material-symbols-outlined text-base md:text-[20px]">calendar_today</span>
-                    </span>
-                    <input type="date" id="filterDate" class="w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 text-sm rounded-lg md:rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-                  </div>
-                </div>
-                <div class="flex gap-2 filter-buttons">
-                  <button onclick="filterByDate('today')" class="flex-1 sm:flex-none px-3 md:px-4 py-2 md:py-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg md:rounded-xl text-xs md:text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">Today</button>
-                  <button onclick="filterByDate('clear')" class="flex-1 sm:flex-none px-3 md:px-4 py-2 md:py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg md:rounded-xl text-xs md:text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Clear</button>
-                </div>
-              </div>
-            </div>
+      <div id="content-records" class="tab-content {{ $activeTab === 'records' ? '' : 'hidden' }}">
+  <div class="mb-4 md:mb-6">
+    <div class="flex flex-col gap-3 md:gap-4">
+      <h2 class="text-base md:text-lg font-bold text-gray-900 dark:text-white">All Attendance Records</h2>
+      <div class="flex flex-col gap-2 md:gap-3">
+        <div class="flex flex-col sm:flex-row gap-2 md:gap-3">
+          <div class="relative flex-1">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+              <span class="material-symbols-outlined text-base md:text-[20px]">search</span>
+            </span>
+            <input type="text" id="searchRecords" placeholder="Search employee..." class="w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 text-sm rounded-lg md:rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
           </div>
-
-          <!-- Desktop Table View -->
-          <div class="hidden md:block bg-surface-light dark:bg-surface-dark rounded-lg md:rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
-            <div class="overflow-x-auto" id="recordsTableContainer">
-              <table class="w-full text-xs md:text-sm">
-                <thead class="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
-                  <tr>
-                    <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Employee</th>
-                    <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
-                    <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Morning</th>
-                    <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Afternoon</th>
-                    <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hours</th>
-                    <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                    <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Note</th>
-                    <th class="text-right py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-800" id="attendanceTableBody">
-                  @forelse($attendances as $attendance)
-                    <tr class="attendance-row hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" data-name="{{ strtolower($attendance->user->name) }}" data-email="{{ strtolower($attendance->user->email ?? '') }}" data-date="{{ $attendance->attendance_date->format('Y-m-d') }}" data-status="{{ $attendance->status }}">
-                      <!-- Employee -->
-                      <td class="py-3 md:py-4 px-3 md:px-6">
-                        <div class="flex items-center gap-2 md:gap-3">
-                          @if($attendance->user->image)
-                            <img src="{{ asset('users/' . $attendance->user->image) }}" alt="{{ $attendance->user->name }}" class="size-8 rounded-full object-cover">
-                          @else
-                            <div class="size-8 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-xs">
-                              {{ strtoupper(substr($attendance->user->name, 0, 2)) }}
-                            </div>
-                          @endif
-                          <span class="text-sm font-medium text-gray-900 dark:text-white">{{ $attendance->user->name }}</span>
-                        </div>
-                      </td>
-                      
-                      <!-- Date -->
-                      <td class="py-3 md:py-4 px-3 md:px-6">
-                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $attendance->attendance_date->format('M d, Y') }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ $attendance->attendance_date->format('l') }}</p>
-                      </td>
-                      
-                      <!-- Morning -->
-                      <td class="py-3 md:py-4 px-3 md:px-6">
-                        <div class="space-y-0.5">
-                          <p class="text-xs text-gray-500 dark:text-gray-400">In: <span class="text-gray-900 dark:text-white font-medium">{{ $attendance->morning_check_in ? $attendance->morning_check_in->format('h:i A') : '—' }}</span></p>
-                          <p class="text-xs text-gray-500 dark:text-gray-400">Out: <span class="text-gray-900 dark:text-white font-medium">{{ $attendance->morning_check_out ? $attendance->morning_check_out->format('h:i A') : '—' }}</span></p>
-                        </div>
-                      </td>
-                      
-                      <!-- Afternoon -->
-                      <td class="py-3 md:py-4 px-3 md:px-6">
-                        <div class="space-y-0.5">
-                          <p class="text-xs text-gray-500 dark:text-gray-400">In: <span class="text-gray-900 dark:text-white font-medium">{{ $attendance->afternoon_check_in ? $attendance->afternoon_check_in->format('h:i A') : '—' }}</span></p>
-                          <p class="text-xs text-gray-500 dark:text-gray-400">Out: <span class="text-gray-900 dark:text-white font-medium">{{ $attendance->afternoon_check_out ? $attendance->afternoon_check_out->format('h:i A') : '—' }}</span></p>
-                        </div>
-                      </td>
-                      
-                      <!-- Hours -->
-                      <td class="py-3 md:py-4 px-3 md:px-6">
-                        <p class="text-sm text-gray-900 dark:text-white font-medium">{{ $attendance->formatted_work_hours }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">M: {{ $attendance->formatted_morning_hours }} | A: {{ $attendance->formatted_afternoon_hours }}</p>
-                      </td>
-                      
-                      <!-- Status -->
-                      <td class="py-3 md:py-4 px-3 md:px-6">
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium {{ $attendance->status === 'on_time' ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' : '' }} {{ $attendance->status === 'late' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' : '' }} {{ $attendance->status === 'absent' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' : '' }} {{ $attendance->status === 'leave' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' : '' }}">
-                          {{ ucfirst(str_replace('_', ' ', $attendance->status)) }}
-                        </span>
-                      </td>
-                      
-                      <!-- Note -->
-                      <td class="py-3 md:py-4 px-3 md:px-6 max-w-xs">
-                        @if($attendance->note || $attendance->absent_note)
-                          <div class="space-y-1">
-                            @if($attendance->note)
-                              <div class="text-xs text-gray-700 dark:text-gray-300 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg border border-blue-100 dark:border-blue-800">
-                                <p class="font-medium text-blue-600 dark:text-blue-400 mb-0.5 flex items-center gap-1">
-                                  <span class="material-symbols-outlined text-sm">info</span>
-                                  Note
-                                </p>
-                                <p class="line-clamp-2">{{ $attendance->note }}</p>
-                              </div>
-                            @endif
-                            @if($attendance->absent_note)
-                              <div class="text-xs text-gray-700 dark:text-gray-300 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg border border-red-100 dark:border-red-800">
-                                <p class="font-medium text-red-600 dark:text-red-400 mb-0.5 flex items-center gap-1">
-                                  <span class="material-symbols-outlined text-sm">warning</span>
-                                  Absent Note
-                                </p>
-                                <p class="line-clamp-2">{{ $attendance->absent_note }}</p>
-                              </div>
-                            @endif
-                          </div>
-                        @else
-                          <span class="text-gray-400 text-xs">—</span>
-                        @endif
-                      </td>
-                      
-                      <!-- Actions -->
-                      <td class="py-3 md:py-4 px-3 md:px-6">
-                        <div class="flex items-center justify-end gap-2">
-                          <button onclick="viewAttendance({{ $attendance->id }})" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title="View Details">
-                            <span class="material-symbols-outlined text-xl">visibility</span>
-                          </button>
-                          <button onclick="editAttendance({{ $attendance->id }})" class="p-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Edit">
-                            <span class="material-symbols-outlined text-xl">edit</span>
-                          </button>
-                          <form method="POST" action="{{ route('admin.attendance.delete', $attendance->id) }}" class="inline" onsubmit="return confirm('Are you sure you want to delete this attendance record?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Delete">
-                              <span class="material-symbols-outlined text-xl">delete</span>
-                            </button>
-                          </form>
-                        </div>
-                      </td>
-                    </tr>
-                  @empty
-                    <tr id="noRecordsDefault">
-                      <td colspan="8" class="py-12 text-center">
-                        <div class="flex flex-col items-center gap-3">
-                          <span class="material-symbols-outlined text-5xl text-gray-300">event_busy</span>
-                          <p class="text-gray-500 dark:text-gray-400">No attendance records found</p>
-                        </div>
-                      </td>
-                    </tr>
-                  @endforelse
-                </tbody>
-              </table>
-            </div>
-
-            <div id="noRecordsFiltered" class="hidden py-12 text-center">
-              <div class="flex flex-col items-center gap-3">
-                <span class="material-symbols-outlined text-5xl text-gray-300">search_off</span>
-                <p class="text-gray-500 dark:text-gray-400">No records found matching your filters</p>
-                <button onclick="clearAllFilters()" class="mt-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-medium transition-colors">Clear Filters</button>
-              </div>
-            </div>
+          <div class="relative flex-1">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+              <span class="material-symbols-outlined text-base md:text-[20px]">calendar_today</span>
+            </span>
+            <input type="date" id="filterDate" class="w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 text-sm rounded-lg md:rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
           </div>
+        </div>
+        <div class="flex gap-2 filter-buttons">
+          <button onclick="filterByDate('today')" class="flex-1 sm:flex-none px-3 md:px-4 py-2 md:py-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg md:rounded-xl text-xs md:text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">Today</button>
+          <button onclick="filterByDate('clear')" class="flex-1 sm:flex-none px-3 md:px-4 py-2 md:py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg md:rounded-xl text-xs md:text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Clear</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-          <!-- Mobile Card View -->
-          <div class="md:hidden space-y-3" id="recordsCardsContainer">
-            @forelse($attendances as $attendance)
-              <div class="attendance-card bg-surface-light dark:bg-surface-dark rounded-lg border border-gray-100 dark:border-gray-800 p-3" data-name="{{ strtolower($attendance->user->name) }}" data-email="{{ strtolower($attendance->user->email ?? '') }}" data-date="{{ $attendance->attendance_date->format('Y-m-d') }}" data-status="{{ $attendance->status }}">
-                
-                <!-- Header -->
-                <div class="flex items-start justify-between mb-3">
-                  <div class="flex items-center gap-2">
-                    @if($attendance->user->image)
-                      <img src="{{ asset('users/' . $attendance->user->image) }}" alt="{{ $attendance->user->name }}" class="size-10 rounded-full object-cover">
-                    @else
-                      <div class="size-10 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-sm">
-                        {{ strtoupper(substr($attendance->user->name, 0, 2)) }}
-                      </div>
-                    @endif
-                    <div>
-                      <p class="font-semibold text-sm text-gray-900 dark:text-white">{{ $attendance->user->name }}</p>
-                      <p class="text-xs text-gray-500 dark:text-gray-400">{{ $attendance->attendance_date->format('M d, Y') }} • {{ $attendance->attendance_date->format('D') }}</p>
+  <!-- Desktop Table View -->
+  <div class="hidden md:block bg-surface-light dark:bg-surface-dark rounded-lg md:rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+    <div class="overflow-x-auto" id="recordsTableContainer">
+      <table class="w-full text-xs md:text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
+          <tr>
+            <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Employee</th>
+            <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+            <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Morning</th>
+            <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Afternoon</th>
+            <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hours</th>
+            <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Morning Status</th>
+            <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Afternoon Status</th>
+            <th class="text-left py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Note</th>
+            <th class="text-right py-3 md:py-4 px-3 md:px-6 text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800" id="attendanceTableBody">
+          @forelse($attendances as $attendance)
+            <tr class="attendance-row hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" data-name="{{ strtolower($attendance->user->name) }}" data-email="{{ strtolower($attendance->user->email ?? '') }}" data-date="{{ $attendance->attendance_date->format('Y-m-d') }}" data-status="{{ $attendance->status }}">
+              <!-- Employee -->
+              <td class="py-3 md:py-4 px-3 md:px-6">
+                <div class="flex items-center gap-2 md:gap-3">
+                  @if($attendance->user->image)
+                    <img src="{{ asset('users/' . $attendance->user->image) }}" alt="{{ $attendance->user->name }}" class="size-8 rounded-full object-cover">
+                  @else
+                    <div class="size-8 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-xs">
+                      {{ strtoupper(substr($attendance->user->name, 0, 2)) }}
                     </div>
-                  </div>
-                  <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium {{ $attendance->status === 'on_time' ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' : '' }} {{ $attendance->status === 'late' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' : '' }} {{ $attendance->status === 'absent' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' : '' }} {{ $attendance->status === 'leave' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' : '' }}">
-                    {{ ucfirst(str_replace('_', ' ', $attendance->status)) }}
-                  </span>
+                  @endif
+                  <span class="text-sm font-medium text-gray-900 dark:text-white">{{ $attendance->user->name }}</span>
                 </div>
-
-                <!-- Sessions -->
-                <div class="grid grid-cols-2 gap-2 mb-3">
-                  <!-- Morning Session -->
-                  <div class="bg-blue-50/50 dark:bg-blue-900/10 rounded-lg p-2 border border-blue-100 dark:border-blue-800/50">
-                    <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
-                      <span class="material-symbols-outlined text-xs">wb_sunny</span>
-                      MORNING
-                    </p>
-                    <div class="space-y-0.5">
-                      <p class="text-xs text-gray-600 dark:text-gray-400">
-                        In: <span class="font-medium text-gray-900 dark:text-white">{{ $attendance->morning_check_in ? $attendance->morning_check_in->format('h:i A') : '—' }}</span>
-                      </p>
-                      <p class="text-xs text-gray-600 dark:text-gray-400">
-                        Out: <span class="font-medium text-gray-900 dark:text-white">{{ $attendance->morning_check_out ? $attendance->morning_check_out->format('h:i A') : '—' }}</span>
-                      </p>
-                      <p class="text-[10px] text-blue-600 dark:text-blue-400 font-medium">{{ $attendance->formatted_morning_hours }}</p>
-                    </div>
-                  </div>
-
-                  <!-- Afternoon Session -->
-                  <div class="bg-orange-50/50 dark:bg-orange-900/10 rounded-lg p-2 border border-orange-100 dark:border-orange-800/50">
-                    <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
-                      <span class="material-symbols-outlined text-xs">wb_twilight</span>
-                      AFTERNOON
-                    </p>
-                    <div class="space-y-0.5">
-                      <p class="text-xs text-gray-600 dark:text-gray-400">
-                        In: <span class="font-medium text-gray-900 dark:text-white">{{ $attendance->afternoon_check_in ? $attendance->afternoon_check_in->format('h:i A') : '—' }}</span>
-                      </p>
-                      <p class="text-xs text-gray-600 dark:text-gray-400">
-                        Out: <span class="font-medium text-gray-900 dark:text-white">{{ $attendance->afternoon_check_out ? $attendance->afternoon_check_out->format('h:i A') : '—' }}</span>
-                      </p>
-                      <p class="text-[10px] text-orange-600 dark:text-orange-400 font-medium">{{ $attendance->formatted_afternoon_hours }}</p>
-                    </div>
-                  </div>
+              </td>
+              
+              <!-- Date -->
+              <td class="py-3 md:py-4 px-3 md:px-6">
+                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $attendance->attendance_date->format('M d, Y') }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ $attendance->attendance_date->format('l') }}</p>
+              </td>
+              
+              <!-- Morning -->
+              <td class="py-3 md:py-4 px-3 md:px-6">
+                <div class="space-y-0.5">
+                  <p class="text-xs text-gray-500 dark:text-gray-400">In: <span class="text-gray-900 dark:text-white font-medium">{{ $attendance->morning_check_in ? $attendance->morning_check_in->format('h:i A') : '—' }}</span></p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Out: <span class="text-gray-900 dark:text-white font-medium">{{ $attendance->morning_check_out ? $attendance->morning_check_out->format('h:i A') : '—' }}</span></p>
                 </div>
-
-                <!-- Total Hours -->
-                <div class="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg mb-2">
-                  <span class="text-xs text-gray-600 dark:text-gray-400 font-medium">Total Hours</span>
-                  <span class="text-sm font-bold text-gray-900 dark:text-white">{{ $attendance->formatted_work_hours }}</span>
+              </td>
+              
+              <!-- Afternoon -->
+              <td class="py-3 md:py-4 px-3 md:px-6">
+                <div class="space-y-0.5">
+                  <p class="text-xs text-gray-500 dark:text-gray-400">In: <span class="text-gray-900 dark:text-white font-medium">{{ $attendance->afternoon_check_in ? $attendance->afternoon_check_in->format('h:i A') : '—' }}</span></p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Out: <span class="text-gray-900 dark:text-white font-medium">{{ $attendance->afternoon_check_out ? $attendance->afternoon_check_out->format('h:i A') : '—' }}</span></p>
                 </div>
-
-                <!-- Notes Section (if any) -->
+              </td>
+              
+              <!-- Hours -->
+              <td class="py-3 md:py-4 px-3 md:px-6">
+                <p class="text-sm text-gray-900 dark:text-white font-medium">{{ $attendance->formatted_work_hours }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">M: {{ $attendance->formatted_morning_hours }} | A: {{ $attendance->formatted_afternoon_hours }}</p>
+              </td>
+              
+              <!-- Morning Status -->
+              <td class="py-2 md:py-4 px-3 md:px-6">
+                <span class="inline-flex items-center px-2 md:px-2.5 py-0.5 md:py-1 rounded-md md:rounded-lg text-[10px] md:text-xs font-medium whitespace-nowrap
+                  {{ $attendance->morning_work_hours === null || $attendance->morning_work_hours == 0 
+                     ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' 
+                     : 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' }}
+                ">
+                  {{ $attendance->morning_work_hours === null || $attendance->morning_work_hours == 0 ? 'អវត្តមាន' : 'វត្តមាន' }}
+                </span>
+              </td>
+              
+              <!-- Afternoon Status -->
+              <td class="py-2 md:py-4 px-3 md:px-6">
+                <span class="inline-flex items-center px-2 md:px-2.5 py-0.5 md:py-1 rounded-md md:rounded-lg text-[10px] md:text-xs font-medium whitespace-nowrap
+                  {{ $attendance->afternoon_work_hours === null || $attendance->afternoon_work_hours == 0 
+                     ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' 
+                     : 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' }}
+                ">
+                  {{ $attendance->afternoon_work_hours === null || $attendance->afternoon_work_hours == 0 ? 'អវត្តមាន' : 'វត្តមាន' }}
+                </span>
+              </td>
+              
+              <!-- Note -->
+              <td class="py-3 md:py-4 px-3 md:px-6 max-w-xs">
                 @if($attendance->note || $attendance->absent_note)
-                  <div class="space-y-2 mb-2">
+                  <div class="space-y-1">
                     @if($attendance->note)
-                      <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-2">
-                        <p class="text-[10px] font-semibold text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1">
-                          <span class="material-symbols-outlined text-xs">info</span>
-                          NOTE
+                      <div class="text-xs text-gray-700 dark:text-gray-300 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg border border-blue-100 dark:border-blue-800">
+                        <p class="font-medium text-blue-600 dark:text-blue-400 mb-0.5 flex items-center gap-1">
+                          <span class="material-symbols-outlined text-sm">info</span>
+                          Note
                         </p>
-                        <p class="text-xs text-gray-700 dark:text-gray-300">{{ $attendance->note }}</p>
+                        <p class="line-clamp-2">{{ $attendance->note }}</p>
                       </div>
                     @endif
                     @if($attendance->absent_note)
-                      <div class="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-lg p-2">
-                        <p class="text-[10px] font-semibold text-red-600 dark:text-red-400 mb-1 flex items-center gap-1">
-                          <span class="material-symbols-outlined text-xs">warning</span>
-                          ABSENT NOTE
+                      <div class="text-xs text-gray-700 dark:text-gray-300 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg border border-red-100 dark:border-red-800">
+                        <p class="font-medium text-red-600 dark:text-red-400 mb-0.5 flex items-center gap-1">
+                          <span class="material-symbols-outlined text-sm">warning</span>
+                          Absent Note
                         </p>
-                        <p class="text-xs text-gray-700 dark:text-gray-300">{{ $attendance->absent_note }}</p>
+                        <p class="line-clamp-2">{{ $attendance->absent_note }}</p>
                       </div>
                     @endif
                   </div>
+                @else
+                  <span class="text-gray-400 text-xs">—</span>
                 @endif
-
-                <!-- Actions -->
-                <div class="flex gap-2">
-                  <button onclick="viewAttendance({{ $attendance->id }})" class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
-                    <span class="material-symbols-outlined text-base">visibility</span>
-                    <span>View</span>
+              </td>
+              
+              <!-- Actions -->
+              <td class="py-3 md:py-4 px-3 md:px-6">
+                <div class="flex items-center justify-end gap-2">
+                  <button onclick="viewAttendance({{ $attendance->id }})" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title="View Details">
+                    <span class="material-symbols-outlined text-xl">visibility</span>
                   </button>
-                  <button onclick="editAttendance({{ $attendance->id }})" class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                    <span class="material-symbols-outlined text-base">edit</span>
-                    <span>Edit</span>
+                  <button onclick="editAttendance({{ $attendance->id }})" class="p-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Edit">
+                    <span class="material-symbols-outlined text-xl">edit</span>
                   </button>
                   <form method="POST" action="{{ route('admin.attendance.delete', $attendance->id) }}" class="inline" onsubmit="return confirm('Are you sure you want to delete this attendance record?')">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
-                      <span class="material-symbols-outlined text-base">delete</span>
+                    <button type="submit" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Delete">
+                      <span class="material-symbols-outlined text-xl">delete</span>
                     </button>
                   </form>
                 </div>
-              </div>
-            @empty
-              <div id="noRecordsDefaultMobile" class="text-center py-12">
+              </td>
+            </tr>
+          @empty
+            <tr id="noRecordsDefault">
+              <td colspan="9" class="py-12 text-center">
                 <div class="flex flex-col items-center gap-3">
                   <span class="material-symbols-outlined text-5xl text-gray-300">event_busy</span>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">No attendance records found</p>
+                  <p class="text-gray-500 dark:text-gray-400">No attendance records found</p>
                 </div>
+              </td>
+            </tr>
+          @endforelse
+        </tbody>
+      </table>
+    </div>
+
+    <div id="noRecordsFiltered" class="hidden py-12 text-center">
+      <div class="flex flex-col items-center gap-3">
+        <span class="material-symbols-outlined text-5xl text-gray-300">search_off</span>
+        <p class="text-gray-500 dark:text-gray-400">No records found matching your filters</p>
+        <button onclick="clearAllFilters()" class="mt-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-medium transition-colors">Clear Filters</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Card View -->
+  <div class="md:hidden space-y-3" id="recordsCardsContainer">
+    @forelse($attendances as $attendance)
+      <div class="attendance-card bg-surface-light dark:bg-surface-dark rounded-lg border border-gray-100 dark:border-gray-800 p-3" data-name="{{ strtolower($attendance->user->name) }}" data-email="{{ strtolower($attendance->user->email ?? '') }}" data-date="{{ $attendance->attendance_date->format('Y-m-d') }}" data-status="{{ $attendance->status }}">
+        
+        <!-- Header -->
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex items-center gap-2">
+            @if($attendance->user->image)
+              <img src="{{ asset('users/' . $attendance->user->image) }}" alt="{{ $attendance->user->name }}" class="size-10 rounded-full object-cover">
+            @else
+              <div class="size-10 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                {{ strtoupper(substr($attendance->user->name, 0, 2)) }}
               </div>
-            @endforelse
-          </div>
-
-          <div id="noRecordsFilteredMobile" class="md:hidden hidden py-12 text-center">
-            <div class="flex flex-col items-center gap-3">
-              <span class="material-symbols-outlined text-5xl text-gray-300">search_off</span>
-              <p class="text-sm text-gray-500 dark:text-gray-400">No records found matching your filters</p>
-              <button onclick="clearAllFilters()" class="mt-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-medium transition-colors">Clear Filters</button>
+            @endif
+            <div>
+              <p class="font-semibold text-sm text-gray-900 dark:text-white">{{ $attendance->user->name }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ $attendance->attendance_date->format('M d, Y') }} • {{ $attendance->attendance_date->format('D') }}</p>
             </div>
           </div>
-
-          <div class="mt-3 md:mt-4 flex flex-col gap-3 md:gap-4 text-xs md:text-sm">
-            <p class="text-gray-600 dark:text-gray-400">
-              Showing <span id="visibleCount" class="font-semibold text-gray-900 dark:text-white">{{ $attendances->count() }}</span> of <span id="totalCount" class="font-semibold text-gray-900 dark:text-white">{{ $attendances->count() }}</span> records
-            </p>
-            <div class="flex flex-wrap gap-1.5 md:gap-2 stats-row">
-              <span class="px-2 md:px-3 py-1 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-md md:rounded-lg text-[10px] md:text-xs font-medium"><span id="onTimeCount">{{ $attendances->where('status', 'on_time')->count() }}</span> On Time</span>
-              <span class="px-2 md:px-3 py-1 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-md md:rounded-lg text-[10px] md:text-xs font-medium"><span id="lateCount">{{ $attendances->where('status', 'late')->count() }}</span> Late</span>
-              <span class="px-2 md:px-3 py-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md md:rounded-lg text-[10px] md:text-xs font-medium"><span id="absentCount">{{ $attendances->where('status', 'absent')->count() }}</span> Absent</span>
-              <span class="px-2 md:px-3 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-md md:rounded-lg text-[10px] md:text-xs font-medium"><span id="leaveCount">{{ $attendances->where('status', 'leave')->count() }}</span> Leave</span>
-            </div>
-          </div>
-
-          @if($attendances->hasPages())
-            <div class="mt-4 md:mt-6">{{ $attendances->links() }}</div>
-          @endif
         </div>
+
+        <!-- Sessions with Status -->
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <!-- Morning Session -->
+          <div class="bg-blue-50/50 dark:bg-blue-900/10 rounded-lg p-2 border border-blue-100 dark:border-blue-800/50">
+            <div class="flex items-center justify-between mb-1">
+              <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs">wb_sunny</span>
+                MORNING
+              </p>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium
+                {{ $attendance->morning_work_hours === null || $attendance->morning_work_hours == 0 
+                   ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' 
+                   : 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' }}
+              ">
+                {{ $attendance->morning_work_hours === null || $attendance->morning_work_hours == 0 ? 'អវត្តមាន' : 'វត្តមាន' }}
+              </span>
+            </div>
+            <div class="space-y-0.5">
+              <p class="text-xs text-gray-600 dark:text-gray-400">
+                In: <span class="font-medium text-gray-900 dark:text-white">{{ $attendance->morning_check_in ? $attendance->morning_check_in->format('h:i A') : '—' }}</span>
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400">
+                Out: <span class="font-medium text-gray-900 dark:text-white">{{ $attendance->morning_check_out ? $attendance->morning_check_out->format('h:i A') : '—' }}</span>
+              </p>
+              <p class="text-[10px] text-blue-600 dark:text-blue-400 font-medium">{{ $attendance->formatted_morning_hours }}</p>
+            </div>
+          </div>
+
+          <!-- Afternoon Session -->
+          <div class="bg-orange-50/50 dark:bg-orange-900/10 rounded-lg p-2 border border-orange-100 dark:border-orange-800/50">
+            <div class="flex items-center justify-between mb-1">
+              <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs">wb_twilight</span>
+                AFTERNOON
+              </p>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium
+                {{ $attendance->afternoon_work_hours === null || $attendance->afternoon_work_hours == 0 
+                   ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' 
+                   : 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' }}
+              ">
+                {{ $attendance->afternoon_work_hours === null || $attendance->afternoon_work_hours == 0 ? 'អវត្តមាន' : 'វត្តមាន' }}
+              </span>
+            </div>
+            <div class="space-y-0.5">
+              <p class="text-xs text-gray-600 dark:text-gray-400">
+                In: <span class="font-medium text-gray-900 dark:text-white">{{ $attendance->afternoon_check_in ? $attendance->afternoon_check_in->format('h:i A') : '—' }}</span>
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400">
+                Out: <span class="font-medium text-gray-900 dark:text-white">{{ $attendance->afternoon_check_out ? $attendance->afternoon_check_out->format('h:i A') : '—' }}</span>
+              </p>
+              <p class="text-[10px] text-orange-600 dark:text-orange-400 font-medium">{{ $attendance->formatted_afternoon_hours }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Total Hours -->
+        <div class="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg mb-2">
+          <span class="text-xs text-gray-600 dark:text-gray-400 font-medium">Total Hours</span>
+          <span class="text-sm font-bold text-gray-900 dark:text-white">{{ $attendance->formatted_work_hours }}</span>
+        </div>
+
+        <!-- Notes Section (if any) -->
+        @if($attendance->note || $attendance->absent_note)
+          <div class="space-y-2 mb-2">
+            @if($attendance->note)
+              <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-2">
+                <p class="text-[10px] font-semibold text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1">
+                  <span class="material-symbols-outlined text-xs">info</span>
+                  NOTE
+                </p>
+                <p class="text-xs text-gray-700 dark:text-gray-300">{{ $attendance->note }}</p>
+              </div>
+            @endif
+            @if($attendance->absent_note)
+              <div class="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-lg p-2">
+                <p class="text-[10px] font-semibold text-red-600 dark:text-red-400 mb-1 flex items-center gap-1">
+                  <span class="material-symbols-outlined text-xs">warning</span>
+                  ABSENT NOTE
+                </p>
+                <p class="text-xs text-gray-700 dark:text-gray-300">{{ $attendance->absent_note }}</p>
+              </div>
+            @endif
+          </div>
+        @endif
+
+        <!-- Actions -->
+        <div class="flex gap-2">
+          <button onclick="viewAttendance({{ $attendance->id }})" class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
+            <span class="material-symbols-outlined text-base">visibility</span>
+            <span>View</span>
+          </button>
+          <button onclick="editAttendance({{ $attendance->id }})" class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+            <span class="material-symbols-outlined text-base">edit</span>
+            <span>Edit</span>
+          </button>
+          <form method="POST" action="{{ route('admin.attendance.delete', $attendance->id) }}" class="inline" onsubmit="return confirm('Are you sure you want to delete this attendance record?')">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+              <span class="material-symbols-outlined text-base">delete</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    @empty
+      <div id="noRecordsDefaultMobile" class="text-center py-12">
+        <div class="flex flex-col items-center gap-3">
+          <span class="material-symbols-outlined text-5xl text-gray-300">event_busy</span>
+          <p class="text-sm text-gray-500 dark:text-gray-400">No attendance records found</p>
+        </div>
+      </div>
+    @endforelse
+  </div>
+
+  <div id="noRecordsFilteredMobile" class="md:hidden hidden py-12 text-center">
+    <div class="flex flex-col items-center gap-3">
+      <span class="material-symbols-outlined text-5xl text-gray-300">search_off</span>
+      <p class="text-sm text-gray-500 dark:text-gray-400">No records found matching your filters</p>
+      <button onclick="clearAllFilters()" class="mt-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-medium transition-colors">Clear Filters</button>
+    </div>
+  </div>
+
+  <div class="mt-3 md:mt-4 flex flex-col gap-3 md:gap-4 text-xs md:text-sm">
+    <p class="text-gray-600 dark:text-gray-400">
+      Showing <span id="visibleCount" class="font-semibold text-gray-900 dark:text-white">{{ $attendances->count() }}</span> of <span id="totalCount" class="font-semibold text-gray-900 dark:text-white">{{ $attendances->count() }}</span> records
+    </p>
+    <div class="flex flex-wrap gap-1.5 md:gap-2 stats-row">
+      <span class="px-2 md:px-3 py-1 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-md md:rounded-lg text-[10px] md:text-xs font-medium"><span id="onTimeCount">{{ $attendances->where('status', 'on_time')->count() }}</span> On Time</span>
+      <span class="px-2 md:px-3 py-1 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-md md:rounded-lg text-[10px] md:text-xs font-medium"><span id="lateCount">{{ $attendances->where('status', 'late')->count() }}</span> Late</span>
+      <span class="px-2 md:px-3 py-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md md:rounded-lg text-[10px] md:text-xs font-medium"><span id="absentCount">{{ $attendances->where('status', 'absent')->count() }}</span> Absent</span>
+      <span class="px-2 md:px-3 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-md md:rounded-lg text-[10px] md:text-xs font-medium"><span id="leaveCount">{{ $attendances->where('status', 'leave')->count() }}</span> Leave</span>
+    </div>
+  </div>
+
+  @if($attendances->hasPages())
+    <div class="mt-4 md:mt-6">{{ $attendances->links() }}</div>
+  @endif
+</div>
       </main>
     </div>
 

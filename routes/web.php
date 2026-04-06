@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminMissionController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CheckinController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\MissionController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\TelegramController;
 use Illuminate\Support\Facades\Auth;
@@ -27,7 +29,7 @@ Route::get('/', function () {
         if (Auth::user()->role_type === 'admin') {
             return redirect('/admin/dashboard'); // or route('admin.dashboard')
         } else {
-            return redirect('/home'); // or route('home') for regular users
+            return redirect('/checkin'); // or route('home') for regular users
         }
     }
     
@@ -43,9 +45,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/my-schedule', [AttendanceController::class, 'index'])->name('attendance');
     Route::get('/support', [HomeController::class, 'support'])->name('support');
       Route::get('/checkin', [CheckInController::class, 'index'])->name('checkin');
+      Route::post('/attendance/submit', [CheckInController::class, 'submit'])->name('attendance.submit');
+    //   Mission
     Route::get('/attendance/verify', [CheckInController::class, 'verify'])->name('attendance.verify');
-    Route::post('/attendance/submit', [CheckInController::class, 'submit'])->name('attendance.submit');
-
+    Route::get('/mission/verify', [MissionController::class, 'verify'])->name('attendance.mission');
+    Route::get('/my-mission', [MissionController::class, 'mymission'])->name('missions.my');
+    Route::post('/attendance/mission', [MissionController::class, 'storeMission'])->name('attendance.mission.store');
+    
 
     Route::get('/telegram/bind', [TelegramController::class, 'initiateBind'])->name('telegram.bind');
     Route::get('/telegram/unbind', [TelegramController::class, 'unbind'])->name('telegram.unbind');
@@ -54,6 +60,11 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/login', [LoginController::class,'showLoginForm'])->name('login');
 Route::post('/login-submit', [LoginController::class,'login'])->name('login.submit');
 
+
+
+// Cancel mission (for the delete button)
+Route::delete('/mission/cancel/{id}', [MissionController::class, 'cancelMission'])->name('mission.cancel');
+Route::get('/mission/details/{id}', [MissionController::class, 'getMissionDetails'])->name('mission.details');
 
 
 // Routes for admin users only
@@ -102,11 +113,18 @@ Route::get('/admin/attendance/{id}/edit', [AttendanceController::class, 'edit'])
 Route::put('/admin/attendance/{id}', [AttendanceController::class, 'update'])->name('admin.attendance.update');
 Route::delete('/admin/attendance/{id}', [AttendanceController::class, 'destroy'])->name('admin.attendance.delete');
     // setting
-     Route::get('/settings', [SettingController::class, 'index'])->name('settings');
+    Route::get('/settings', [SettingController::class, 'index'])->name('settings');
     Route::put('/settings', action: [SettingController::class, 'update'])->name('settings.update');
-     Route::post('/settings/export', [SettingController::class, 'exportData'])->name('settings.export');
+    Route::post('/settings/export', [SettingController::class, 'exportData'])->name('settings.export');
     Route::post('/settings/clear-cache', [SettingController::class, 'clearCache'])->name('settings.clear-cache');
     Route::delete('/settings/reset-data', [SettingController::class, 'resetData'])->name('settings.reset-data');
+    Route::get('/mission', [MissionController::class,'index'])->name('mission');
+
+   Route::get('admin/missions/{id}', [AdminMissionController::class, 'show'])->name('missions.show');
+    Route::post('admin/missions/{id}/approve', [AdminMissionController::class, 'approve'])->name('missions.approve');
+    Route::post('admin/missions/{id}/reject', [AdminMissionController::class, 'reject'])->name('missions.reject');
+    Route::delete('/missions/{id}', [AdminMissionController::class, 'destroy'])->name('admin.missions.delete');
+
 });
 
 Route::get('/telegram/setup', [TelegramController::class, 'setupWebhook']);

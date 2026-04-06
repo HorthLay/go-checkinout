@@ -13,6 +13,7 @@ class Attendance extends Model
 
     protected $fillable = [
         'user_id',
+        'mission_id',
         'attendance_date',
         'morning_check_in',
         'morning_check_out',
@@ -35,18 +36,125 @@ class Attendance extends Model
         'work_hours' => 'decimal:2',
     ];
 
-    // Relationships
+    // ============================================
+    // RELATIONSHIPS
+    // ============================================
+
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
+    public function mission()
+    {
+        return $this->belongsTo(Mission::class);
+    }
+
+    // ============================================
+    // MISSION ATTENDANCE METHODS
+    // ============================================
+
+    /**
+     * Calculate work hours for mission attendance
+     * Mission attendance uses only morning_check_in and morning_check_out for start/end times
+     * No separate sessions - just total hours for the day
+     */
+   public function calculateMissionWorkHours()
+    {
+        // If mission is pending or rejected, mark as absent with 0 hours
+        if (!$this->mission_id || !$this->mission || !$this->mission->isApproved()) {
+            $this->work_hours = 0;
+            $this->status = 'absent'; // 🔥 Mark as absent until approved
+            $this->save();
+            return;
+        }
+
+        // Calculate total hours from check-in to check-out (for approved missions)
+        if ($this->morning_check_in && $this->morning_check_out) {
+            $checkIn = Carbon::parse($this->morning_check_in);
+            $checkOut = Carbon::parse($this->morning_check_out);
+            $totalMinutes = $checkOut->diffInMinutes($checkIn);
+
+            // Convert to decimal hours
+            $this->work_hours = round($totalMinutes / 60, 2);
+            $this->status = 'on_time'; // 🔥 Mark as on_time when approved
+            $this->save();
+        } else {
+            $this->work_hours = 0;
+            $this->status = 'absent';
+            $this->save();
+        }
+    }
+
+
+    /**
+     * Check if this is mission attendance
+     */
+    public function isMissionAttendance()
+    {
+        return !is_null($this->mission_id);
+    }
+
+    /**
+     * Get mission check-in time
+     */
+    public function getMissionCheckInAttribute()
+    {
+        if (!$this->mission_id) {
+            return null;
+        }
+        return $this->morning_check_in;
+    }
+
+    /**
+     * Get mission check-out time
+     */
+    public function getMissionCheckOutAttribute()
+    {
+        if (!$this->mission_id) {
+            return null;
+        }
+        return $this->morning_check_out;
+    }
+
+    /**
+     * Check if mission is approved
+     */
+    public function isMissionApproved()
+    {
+        if (!$this->mission_id || !$this->mission) {
+            return false;
+        }
+        return $this->mission->isApproved();
+    }
+
+    /**
+     * Check if mission is pending
+     */
+    public function isMissionPending()
+    {
+        if (!$this->mission_id || !$this->mission) {
+            return false;
+        }
+        return $this->mission->isPending();
+    }
+
+    // ============================================
+    // WORK HOURS CALCULATION (REGULAR + MISSION)
+    // ============================================
+
     /**
      * Calculate total work hours from both morning and afternoon sessions
-     * Stores total hours as decimal (e.g., 8.5 hours = 8 hours 30 minutes)
+     * OR from mission total hours if mission attendance
      */
     public function calculateWorkHours()
     {
+        // If this is mission attendance, use mission calculation
+        if ($this->mission_id) {
+            return $this->calculateMissionWorkHours();
+        }
+
+        // Regular attendance calculation
         $totalMinutes = 0;
 
         // Calculate morning session hours
@@ -71,8 +179,14 @@ class Attendance extends Model
     /**
      * Get morning session hours only
      */
-    public function getMorningWorkHoursAttribute()
+   public function getMorningWorkHoursAttribute()
     {
+        // For mission attendance, return 0 if not approved
+        if ($this->mission_id) {
+            return $this->isMissionApproved() ? $this->work_hours : 0;
+        }
+
+        // Regular attendance
         if (!$this->morning_check_in || !$this->morning_check_out) {
             return 0;
         }
@@ -84,11 +198,17 @@ class Attendance extends Model
         return round($totalMinutes / 60, 2);
     }
 
+
     /**
      * Get afternoon session hours only
      */
-    public function getAfternoonWorkHoursAttribute()
+     public function getAfternoonWorkHoursAttribute()
     {
+        // Mission attendance has no afternoon session
+        if ($this->mission_id) {
+            return 0;
+        }
+
         if (!$this->afternoon_check_in || !$this->afternoon_check_out) {
             return 0;
         }
@@ -100,11 +220,20 @@ class Attendance extends Model
         return round($totalMinutes / 60, 2);
     }
 
+    // ============================================
+    // FORMATTED HOURS ATTRIBUTES
+    // ============================================
+
     /**
      * Get formatted work hours as "Xh Ym" (e.g., "8h 30m")
      */
     public function getFormattedWorkHoursAttribute()
     {
+        // If mission is not approved, show 0 hours (marked as absent)
+        if ($this->mission_id && !$this->isMissionApproved()) {
+            return '0h'; // 🔥 Show 0 hours for pending/rejected missions
+        }
+
         if (!$this->work_hours) {
             return '—';
         }
@@ -120,11 +249,21 @@ class Attendance extends Model
         return "{$hours}h";
     }
 
+
     /**
      * Get formatted morning session hours
      */
-    public function getFormattedMorningHoursAttribute()
+  public function getFormattedMorningHoursAttribute()
     {
+        // For mission attendance, return 0 hours if not approved
+        if ($this->mission_id) {
+            if (!$this->isMissionApproved()) {
+                return '0h'; // 🔥 Show 0 hours for pending/rejected missions
+            }
+            return $this->formatted_work_hours;
+        }
+
+        // Regular attendance
         $hours = $this->morning_work_hours;
         if (!$hours) {
             return '—';
@@ -141,11 +280,18 @@ class Attendance extends Model
         return "{$h}h";
     }
 
+
+
     /**
      * Get formatted afternoon session hours
      */
-    public function getFormattedAfternoonHoursAttribute()
+   public function getFormattedAfternoonHoursAttribute()
     {
+        // For mission attendance, show N/A (no separate afternoon session)
+        if ($this->mission_id) {
+            return '—';
+        }
+
         $hours = $this->afternoon_work_hours;
         if (!$hours) {
             return '—';
@@ -162,11 +308,17 @@ class Attendance extends Model
         return "{$h}h";
     }
 
+
     /**
      * Get work hours in hours only (integer)
      */
-    public function getWorkHoursOnlyAttribute()
+   public function getWorkHoursOnlyAttribute()
     {
+        // For mission, return 0 if not approved
+        if ($this->mission_id && !$this->isMissionApproved()) {
+            return 0;
+        }
+
         if (!$this->work_hours) {
             return 0;
         }
@@ -174,11 +326,17 @@ class Attendance extends Model
         return floor($this->work_hours);
     }
 
+
     /**
      * Get work minutes only (integer)
      */
     public function getWorkMinutesOnlyAttribute()
     {
+        // For mission, return 0 if not approved
+        if ($this->mission_id && !$this->isMissionApproved()) {
+            return 0;
+        }
+
         if (!$this->work_hours) {
             return 0;
         }
@@ -189,10 +347,14 @@ class Attendance extends Model
 
     /**
      * Get total work duration as human-readable string
-     * Examples: "8 hours 30 minutes", "5 hours", "45 minutes"
      */
     public function getWorkDurationAttribute()
     {
+        // For mission, show "Absent" if not approved
+        if ($this->mission_id && !$this->isMissionApproved()) {
+            return 'Absent (Pending Approval)'; // 🔥 Show absent for pending missions
+        }
+
         if (!$this->work_hours) {
             return 'No data';
         }
@@ -214,53 +376,10 @@ class Attendance extends Model
         return implode(' ', $parts);
     }
 
-    /**
-     * Check if late for morning session
-     */
-    public function isLateMorning()
-    {
-        $schedule = AttendanceSchedule::where('user_id', $this->user_id)
-                                      ->where('is_active', true)
-                                      ->first();
-        
-        if (!$schedule || !$this->morning_check_in) {
-            return false;
-        }
 
-        $checkInTime = Carbon::parse($this->morning_check_in);
-        $scheduledTime = Carbon::parse($this->attendance_date->format('Y-m-d') . ' ' . $schedule->scheduled_check_in_morining);
-        $lateThreshold = $scheduledTime->addMinutes($schedule->late_allowed_min);
-
-        return $checkInTime->gt($lateThreshold);
-    }
-
-    /**
-     * Check if late for afternoon session
-     */
-    public function isLateAfternoon()
-    {
-        $schedule = AttendanceSchedule::where('user_id', $this->user_id)
-                                      ->where('is_active', true)
-                                      ->first();
-        
-        if (!$schedule || !$this->afternoon_check_in) {
-            return false;
-        }
-
-        $checkInTime = Carbon::parse($this->afternoon_check_in);
-        $scheduledTime = Carbon::parse($this->attendance_date->format('Y-m-d') . ' ' . $schedule->scheduled_check_in_afternoon);
-        $lateThreshold = $scheduledTime->addMinutes($schedule->late_allowed_min);
-
-        return $checkInTime->gt($lateThreshold);
-    }
-
-    /**
-     * Check if late for any session
-     */
-    public function isLate()
-    {
-        return $this->isLateMorning() || $this->isLateAfternoon();
-    }
+    // ============================================
+    // CHECK-IN/OUT STATUS METHODS
+    // ============================================
 
     /**
      * Check if user checked in for morning session
@@ -315,10 +434,70 @@ class Attendance extends Model
      */
     public function isFullDayComplete()
     {
+        // Mission attendance only needs morning session
+        if ($this->mission_id) {
+            return $this->isMorningSessionComplete();
+        }
+
         return $this->isMorningSessionComplete() && $this->isAfternoonSessionComplete();
     }
 
-    // Scopes
+    // ============================================
+    // LATE CHECK METHODS
+    // ============================================
+
+    /**
+     * Check if late for morning session
+     */
+    public function isLateMorning()
+    {
+        $schedule = AttendanceSchedule::where('user_id', $this->user_id)
+                                      ->where('is_active', true)
+                                      ->first();
+        
+        if (!$schedule || !$this->morning_check_in) {
+            return false;
+        }
+
+        $checkInTime = Carbon::parse($this->morning_check_in);
+        $scheduledTime = Carbon::parse($this->attendance_date->format('Y-m-d') . ' ' . $schedule->scheduled_check_in_morining);
+        $lateThreshold = $scheduledTime->addMinutes($schedule->late_allowed_min);
+
+        return $checkInTime->gt($lateThreshold);
+    }
+
+    /**
+     * Check if late for afternoon session
+     */
+    public function isLateAfternoon()
+    {
+        $schedule = AttendanceSchedule::where('user_id', $this->user_id)
+                                      ->where('is_active', true)
+                                      ->first();
+        
+        if (!$schedule || !$this->afternoon_check_in) {
+            return false;
+        }
+
+        $checkInTime = Carbon::parse($this->afternoon_check_in);
+        $scheduledTime = Carbon::parse($this->attendance_date->format('Y-m-d') . ' ' . $schedule->scheduled_check_in_afternoon);
+        $lateThreshold = $scheduledTime->addMinutes($schedule->late_allowed_min);
+
+        return $checkInTime->gt($lateThreshold);
+    }
+
+    /**
+     * Check if late for any session
+     */
+    public function isLate()
+    {
+        return $this->isLateMorning() || $this->isLateAfternoon();
+    }
+
+    // ============================================
+    // SCOPES
+    // ============================================
+
     public function scopeToday($query)
     {
         return $query->whereDate('attendance_date', today());
@@ -353,14 +532,52 @@ class Attendance extends Model
         });
     }
 
-    // Working Days Integration (using cache-based configuration)
+    /**
+     * Scope for mission attendances only
+     */
+    public function scopeMissionOnly($query)
+    {
+        return $query->whereNotNull('mission_id');
+    }
+
+    /**
+     * Scope for regular attendances only
+     */
+    public function scopeRegularOnly($query)
+    {
+        return $query->whereNull('mission_id');
+    }
+
+    /**
+     * Scope for approved mission attendances
+     */
+    public function scopeApprovedMissions($query)
+    {
+        return $query->whereHas('mission', function($q) {
+            $q->where('status', 'approved');
+        });
+    }
+
+    /**
+     * Scope for pending mission attendances
+     */
+    public function scopePendingMissions($query)
+    {
+        return $query->whereHas('mission', function($q) {
+            $q->where('status', 'pending');
+        });
+    }
+
+    // ============================================
+    // WORKING DAYS METHODS
+    // ============================================
 
     /**
      * Check if a specific date is a working day
      */
     public static function isWorkingDay(Carbon $date)
     {
-        $dayName = strtolower($date->format('l')); // e.g., "monday"
+        $dayName = strtolower($date->format('l'));
         $workingDays = Cache::get('working_days', ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
         
         return in_array($dayName, $workingDays);
@@ -440,12 +657,10 @@ class Attendance extends Model
 
         $currentTime = $time->format('H:i');
         
-        // Check morning session
         if ($currentTime >= $hours['morning']['start'] && $currentTime <= $hours['morning']['end']) {
             return true;
         }
         
-        // Check afternoon session
         if ($currentTime >= $hours['afternoon']['start'] && $currentTime <= $hours['afternoon']['end']) {
             return true;
         }
@@ -471,17 +686,14 @@ class Attendance extends Model
 
         $currentTime = $time->format('H:i');
         
-        // Check morning session
         if ($currentTime >= $hours['morning']['start'] && $currentTime <= $hours['morning']['end']) {
             return 'morning';
         }
         
-        // Check afternoon session  
         if ($currentTime >= $hours['afternoon']['start'] && $currentTime <= $hours['afternoon']['end']) {
             return 'afternoon';
         }
         
-        // Between sessions or outside hours
         if ($currentTime < $hours['morning']['start']) {
             return 'before_work';
         } elseif ($currentTime > $hours['morning']['end'] && $currentTime < $hours['afternoon']['start']) {
@@ -491,9 +703,6 @@ class Attendance extends Model
         }
     }
 
-    /**
-     * Scope: Only working days
-     */
     public function scopeWorkingDaysOnly($query)
     {
         $workingDays = Cache::get('working_days', ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
@@ -506,9 +715,6 @@ class Attendance extends Model
         });
     }
 
-    /**
-     * Scope: Only non-working days
-     */
     public function scopeNonWorkingDaysOnly($query)
     {
         $workingDays = Cache::get('working_days', ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
@@ -529,7 +735,7 @@ class Attendance extends Model
     public static function getNextWorkingDay(Carbon $date = null)
     {
         $date = $date ? $date->copy() : now();
-        $maxAttempts = 14; // Check up to 2 weeks ahead
+        $maxAttempts = 14;
         
         for ($i = 0; $i < $maxAttempts; $i++) {
             $date->addDay();
@@ -587,20 +793,20 @@ class Attendance extends Model
         return implode(', ', $formatted);
     }
 
+    // ============================================
+    // ABSENT MARKING METHODS
+    // ============================================
+
     /**
      * Check and mark attendance as absent based on rules
-     * Rules:
-     * 1. Morning check-in after 9:00 AM → Mark morning as absent
-     * 2. Morning check-out before 11:00 AM → Mark morning as absent
-     * 3. No morning check-out by 2:00 PM → Mark morning as absent
-     * 4. Afternoon check-in after 3:00 PM → Mark afternoon as absent
-     * 5. Afternoon check-out before 5:00 PM → Mark afternoon as absent
-     * 6. No afternoon check-out by 5:30 PM → Mark afternoon as absent
-     * 7. Morning check-in without check-out (after 2:00 PM) → Mark morning as absent (nullify both)
-     * 8. Afternoon check-in without check-out (after 5:30 PM) → Mark afternoon as absent (nullify both)
      */
     public function checkAndMarkAbsent()
     {
+        // Skip for mission attendance
+        if ($this->mission_id) {
+            return [];
+        }
+
         $changes = [];
         $now = now();
         $currentTime = $now->format('H:i');
@@ -609,13 +815,11 @@ class Attendance extends Model
         if ($this->morning_check_in) {
             $morningCheckIn = Carbon::parse($this->morning_check_in);
             
-            // Rule 1: If check-in is after 9:00 AM → Mark as absent
             if ($morningCheckIn->format('H:i') > '09:00') {
                 $this->morning_check_in = null;
                 $this->morning_check_out = null;
                 $changes[] = 'Morning check-in after 9:00 AM';
             }
-            // Rule 3 & 7: If no morning check-out and afternoon session has started (after 2:00 PM) → Mark morning as absent
             elseif (!$this->morning_check_out && $currentTime >= '14:00') {
                 $this->morning_check_in = null;
                 $this->morning_check_out = null;
@@ -626,7 +830,6 @@ class Attendance extends Model
         if ($this->morning_check_out && $this->morning_check_in) {
             $morningCheckOut = Carbon::parse($this->morning_check_out);
             
-            // Rule 2: If check-out is before 11:00 AM → Mark as absent
             if ($morningCheckOut->format('H:i') < '11:00') {
                 $this->morning_check_in = null;
                 $this->morning_check_out = null;
@@ -638,13 +841,11 @@ class Attendance extends Model
         if ($this->afternoon_check_in) {
             $afternoonCheckIn = Carbon::parse($this->afternoon_check_in);
             
-            // Rule 4: If check-in is after 3:00 PM (15:00) → Mark as absent
             if ($afternoonCheckIn->format('H:i') > '15:00') {
                 $this->afternoon_check_in = null;
                 $this->afternoon_check_out = null;
                 $changes[] = 'Afternoon check-in after 3:00 PM';
             }
-            // Rule 6 & 8: If no afternoon check-out and it's past end of work day (after 5:30 PM) → Mark afternoon as absent
             elseif (!$this->afternoon_check_out && $currentTime >= '17:30') {
                 $this->afternoon_check_in = null;
                 $this->afternoon_check_out = null;
@@ -655,7 +856,6 @@ class Attendance extends Model
         if ($this->afternoon_check_out && $this->afternoon_check_in) {
             $afternoonCheckOut = Carbon::parse($this->afternoon_check_out);
             
-            // Rule 5: If check-out is before 5:00 PM (17:00) → Mark as absent
             if ($afternoonCheckOut->format('H:i') < '17:00') {
                 $this->afternoon_check_in = null;
                 $this->afternoon_check_out = null;
@@ -663,9 +863,7 @@ class Attendance extends Model
             }
         }
         
-        // Update status if any changes were made
         if (!empty($changes)) {
-            // Check if both sessions are now null
             if (!$this->morning_check_in && !$this->afternoon_check_in) {
                 $this->status = 'absent';
                 $this->absent_note = 'Automatically marked absent: ' . implode(', ', $changes);
@@ -674,7 +872,6 @@ class Attendance extends Model
                 $this->absent_note = 'Half day: ' . implode(', ', $changes);
             }
             
-            // Recalculate work hours
             $this->calculateWorkHours();
             $this->save();
         }
@@ -684,16 +881,15 @@ class Attendance extends Model
 
     /**
      * Auto-check for missing check-outs and mark as absent
-     * Should be called via scheduled task
      */
     public static function autoCheckMissingCheckouts()
     {
         $today = now()->format('Y-m-d');
         $currentTime = now()->format('H:i');
         
-        // Check for missing morning check-outs (after 2:00 PM)
         if ($currentTime >= '14:00') {
             Attendance::whereDate('attendance_date', $today)
+                      ->whereNull('mission_id') // Skip mission attendance
                       ->whereNotNull('morning_check_in')
                       ->whereNull('morning_check_out')
                       ->each(function ($attendance) {
@@ -701,9 +897,9 @@ class Attendance extends Model
                       });
         }
         
-        // Check for missing afternoon check-outs (after 5:30 PM)
         if ($currentTime >= '17:30') {
             Attendance::whereDate('attendance_date', $today)
+                      ->whereNull('mission_id') // Skip mission attendance
                       ->whereNotNull('afternoon_check_in')
                       ->whereNull('afternoon_check_out')
                       ->each(function ($attendance) {

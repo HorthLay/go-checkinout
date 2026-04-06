@@ -159,12 +159,11 @@
       <!-- Header -->
       <header class="h-16 md:h-20 flex items-center justify-between px-4 md:px-6 lg:px-10 bg-surface-light dark:bg-surface-dark border-b border-gray-100 dark:border-gray-800 shrink-0 z-10">
         <div class="flex items-center gap-3 lg:hidden">
-   
           <span class="font-bold text-base md:text-lg">QR Code</span>
         </div>
         <div class="hidden lg:block">
           <h1 class="text-xl font-bold text-gray-900 dark:text-white">QR Code Generator</h1>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Generate QR codes for check-in/check-out</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Generate QR codes for attendance & mission tracking</p>
         </div>
         @include('home.Layouts.header')
       </header>
@@ -184,7 +183,7 @@
                 </div>
                 <h3 class="font-semibold text-sm md:text-base text-blue-900 dark:text-blue-100">Generate</h3>
               </div>
-              <p class="text-xs md:text-sm text-blue-700 dark:text-blue-300">Create a QR code for attendance tracking</p>
+              <p class="text-xs md:text-sm text-blue-700 dark:text-blue-300">Create QR for attendance or mission</p>
             </div>
 
             <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-3 md:p-4">
@@ -204,7 +203,7 @@
                 </div>
                 <h3 class="font-semibold text-sm md:text-base text-purple-900 dark:text-purple-100">Scan</h3>
               </div>
-              <p class="text-xs md:text-sm text-purple-700 dark:text-purple-300">Employees scan to check-in or check-out instantly</p>
+              <p class="text-xs md:text-sm text-purple-700 dark:text-purple-300">Scan to check-in or report mission</p>
             </div>
           </div>
 
@@ -218,6 +217,24 @@
               </h2>
 
               <div class="space-y-3 md:space-y-4">
+                <!-- QR Type Selection -->
+                <div>
+                  <label class="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">QR Code Type</label>
+                  <select id="qr-type" onchange="toggleMissionOptions()" class="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                    <option value="attendance">Regular Attendance (Office)</option>
+                    <option value="mission">Mission Attendance (Field Work)</option>
+                  </select>
+                </div>
+
+                <!-- Mission Options (Hidden by default) -->
+                <div id="mission-options" class="hidden space-y-3 md:space-y-4 p-3 md:p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800">
+                  <div class="flex items-center gap-2 text-orange-700 dark:text-orange-300 mb-2">
+                    <span class="material-symbols-outlined text-lg">info</span>
+                    <span class="text-xs md:text-sm font-medium">Mission QR Code</span>
+                  </div>
+                  <p class="text-xs text-orange-600 dark:text-orange-400">Employees can scan this QR to check-in from anywhere during field missions. Admin approval required.</p>
+                </div>
+
                 <!-- QR Code Color -->
                 <div>
                   <label class="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">QR Code Color</label>
@@ -225,6 +242,7 @@
                     <option value="blue">Blue</option>
                     <option value="purple">Purple</option>
                     <option value="green">Green</option>
+                    <option value="orange">Orange</option>
                     <option value="red">Red</option>
                     <option value="black">Black</option>
                   </select>
@@ -272,11 +290,11 @@
                     <!-- Header -->
                     <div class="text-center mb-4 md:mb-6">
                       <div class="inline-flex items-center gap-2 bg-primary/10 px-3 md:px-4 py-1.5 md:py-2 rounded-full mb-2 md:mb-3">
-                        <span class="material-symbols-outlined text-primary text-lg md:text-xl">qr_code_scanner</span>
+                        <span class="material-symbols-outlined text-primary text-lg md:text-xl" id="qr-icon">qr_code_scanner</span>
                         <span class="font-bold text-primary text-sm md:text-base">Attendify</span>
                       </div>
-                      <h3 class="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-1">Attendance Check-In/Out</h3>
-                      <p class="text-xs md:text-sm text-gray-600">Scan to record your attendance</p>
+                      <h3 class="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-1" id="qr-title">Attendance Check-In/Out</h3>
+                      <p class="text-xs md:text-sm text-gray-600" id="qr-subtitle">Scan to record your attendance</p>
                     </div>
 
                     <!-- QR Code Container -->
@@ -285,12 +303,12 @@
                     </div>
 
                     <!-- Instructions -->
-                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl md:rounded-2xl p-3 md:p-4 mb-3 md:mb-4">
+                    <div id="qr-instructions" class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl md:rounded-2xl p-3 md:p-4 mb-3 md:mb-4">
                       <p class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-2">
                         <span class="material-symbols-outlined text-sm md:text-base">info</span>
                         How to Use
                       </p>
-                      <ol class="text-xs text-gray-600 space-y-1 list-decimal list-inside">
+                      <ol class="text-xs text-gray-600 space-y-1 list-decimal list-inside" id="instruction-list">
                         <li>Open your camera or QR scanner app</li>
                         <li>Point at this QR code</li>
                         <li>Tap the notification to check-in/out</li>
@@ -385,19 +403,75 @@
         blue: '#135bec',
         purple: '#8b5cf6',
         green: '#10b981',
+        orange: '#f97316',
         red: '#ef4444',
         black: '#000000'
       };
 
+      function toggleMissionOptions() {
+        const qrType = document.getElementById('qr-type').value;
+        const missionOptions = document.getElementById('mission-options');
+        
+        if (qrType === 'mission') {
+          missionOptions.classList.remove('hidden');
+        } else {
+          missionOptions.classList.add('hidden');
+        }
+      }
+
       function generateQR() {
         const size = parseInt(document.getElementById('qr-size').value);
         const color = document.getElementById('qr-color').value;
+        const qrType = document.getElementById('qr-type').value;
 
         // Clear previous QR code
         document.getElementById('qrcode').innerHTML = '';
 
-        // Generate QR data - redirect to verify route (requires authentication)
-        const qrData = window.location.origin + '/attendance/verify';
+        // Generate QR data based on type
+        let qrData, title, subtitle, instructions, icon, instructionsBg;
+        
+        if (qrType === 'mission') {
+          qrData = window.location.origin + '/mission/verify';
+          title = 'Mission Attendance';
+          subtitle = 'Scan to check-in from field location';
+          icon = 'location_on';
+          instructionsBg = 'from-orange-50 to-red-50';
+          instructions = [
+            'Scan this QR code from your field location',
+            'Fill in mission details and location',
+            'Submit for admin approval',
+            'Check-in once approved'
+          ];
+        } else {
+          qrData = window.location.origin + '/attendance/verify';
+          title = 'Attendance Check-In/Out';
+          subtitle = 'Scan to record your attendance';
+          icon = 'qr_code_scanner';
+          instructionsBg = 'from-blue-50 to-purple-50';
+          instructions = [
+            'Open your camera or QR scanner app',
+            'Point at this QR code',
+            'Tap the notification to check-in/out'
+          ];
+        }
+
+        // Update card content
+        document.getElementById('qr-title').textContent = title;
+        document.getElementById('qr-subtitle').textContent = subtitle;
+        document.getElementById('qr-icon').textContent = icon;
+        
+        // Update instructions
+        const instructionList = document.getElementById('instruction-list');
+        instructionList.innerHTML = '';
+        instructions.forEach(instruction => {
+          const li = document.createElement('li');
+          li.textContent = instruction;
+          instructionList.appendChild(li);
+        });
+
+        // Update instruction background
+        const instructionsDiv = document.getElementById('qr-instructions');
+        instructionsDiv.className = `bg-gradient-to-r ${instructionsBg} rounded-xl md:rounded-2xl p-3 md:p-4 mb-3 md:mb-4`;
 
         // Create QR code
         currentQRCode = new QRCode(document.getElementById('qrcode'), {
@@ -428,6 +502,9 @@
           return;
         }
 
+        const qrType = document.getElementById('qr-type').value;
+        const filename = `attendify-qrcode-${qrType}-designed-${Date.now()}.png`;
+
         html2canvas(card, {
           backgroundColor: '#ffffff',
           scale: 2,
@@ -435,7 +512,7 @@
           useCORS: true
         }).then(canvas => {
           const link = document.createElement('a');
-          link.download = `attendify-qrcode-designed-${Date.now()}.png`;
+          link.download = filename;
           link.href = canvas.toDataURL('image/png');
           link.click();
         });
@@ -448,8 +525,11 @@
           return;
         }
 
+        const qrType = document.getElementById('qr-type').value;
+        const filename = `attendify-qrcode-${qrType}-${Date.now()}.png`;
+
         const link = document.createElement('a');
-        link.download = `attendify-qrcode-${Date.now()}.png`;
+        link.download = filename;
         link.href = canvas.toDataURL();
         link.click();
       }

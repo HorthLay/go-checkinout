@@ -174,14 +174,14 @@
           </div>
 
           <!-- Late Today -->
-          <div class="stat-card bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 p-4 md:p-6">
+          {{-- <div class="stat-card bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 p-4 md:p-6">
             <div class="flex items-center justify-between mb-3">
               <span class="text-xs md:text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase">Late</span>
               <span class="material-symbols-outlined text-orange-600 dark:text-orange-400 text-2xl md:text-3xl">schedule</span>
             </div>
             <h3 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-1">{{ $stats['total_late_today'] }}</h3>
             <p class="text-xs text-gray-500 dark:text-gray-400">Today</p>
-          </div>
+          </div> --}}
 
           <!-- Total Hours This Month -->
           <div class="stat-card bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 p-4 md:p-6">
@@ -229,12 +229,12 @@
                     <div class="flex-1 min-w-0">
                       <p class="text-sm md:text-base font-bold text-gray-900 dark:text-white truncate">{{ $performer->name }}</p>
                       <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $performer->email }}</p>
-                      <div class="flex items-center gap-2 mt-1">
+                      {{-- <div class="flex items-center gap-2 mt-1">
                         <span class="text-xs text-green-600 dark:text-green-400">✓ {{ $performer->present_days }} days</span>
                         @if($performer->late_days > 0)
                           <span class="text-xs text-orange-600 dark:text-orange-400">⚠ {{ $performer->late_days }} late</span>
                         @endif
-                      </div>
+                      </div> --}}
                     </div>
 
                     <div class="text-right">
@@ -347,12 +347,12 @@
                     </div>
                     <div class="text-right">
                       <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $attendance->formatted_work_hours }}</p>
-                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                      {{-- <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
                         {{ $attendance->status === 'on_time' ? 'bg-green-50 text-green-600' : '' }}
                         {{ $attendance->status === 'late' ? 'bg-orange-50 text-orange-600' : '' }}
                       ">
                         {{ ucfirst(str_replace('_', ' ', $attendance->status)) }}
-                      </span>
+                      </span> --}}
                     </div>
                   </div>
                 </div>
@@ -402,10 +402,10 @@
                 <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ $todaySummary['on_time'] }}</p>
                 <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">On Time</p>
               </div>
-              <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
+              {{-- <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
                 <p class="text-2xl font-bold text-orange-600 dark:text-orange-400">{{ $todaySummary['late'] }}</p>
                 <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Late</p>
-              </div>
+              </div> --}}
               <div class="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
                 <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ $todaySummary['complete_days'] }}</p>
                 <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Full Day</p>

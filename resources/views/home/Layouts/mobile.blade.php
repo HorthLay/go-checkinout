@@ -9,6 +9,8 @@
         <span class="material-symbols-outlined text-[22px]">dashboard</span>
         <span class="text-[11px] font-medium">Dashboard</span>
       </a>
+
+      
       
       {{-- Log Attendance --}}
       <a href="{{ route('admin.attendance.index') }}" 
@@ -23,6 +25,23 @@
         <span class="material-symbols-outlined text-[22px]">event_note</span>
         <span class="text-[11px] font-medium">Log</span>
       </a>
+
+
+      {{-- My Mission --}}
+      <a href="{{ route('missions.my') }}" 
+         class="flex flex-col items-center justify-center gap-0.5 flex-1 h-full {{ request()->routeIs('missions.my') ? 'text-primary' : 'text-gray-500 dark:text-gray-400' }} transition-colors active:scale-95">
+        <span class="material-symbols-outlined text-[22px]">target</span>
+        <span class="text-[11px] font-medium">Mission</span>
+      </a>
+        {{-- Check-In (Center - Small Button) --}}
+    <a href="{{ route('checkin') }}" 
+       class="flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors active:scale-95">
+      <div class="flex items-center justify-center {{ request()->routeIs('checkin') ? 'bg-primary' : 'bg-primary' }} text-white rounded-full size-12 shadow-lg shadow-primary/30">
+        <span class="material-symbols-outlined text-[24px]">check_circle</span>
+      </div>
+      <span class="text-[11px] font-semibold {{ request()->routeIs('checkin') ? 'text-primary' : 'text-gray-700 dark:text-gray-300' }} mt-0.5">Check-In</span>
+    </a>
+    
       
       {{-- My Schedule --}}
       <a href="{{ route('attendance') }}" 
@@ -32,15 +51,7 @@
       </a>
     @endif
     
-    {{-- Check-In (Center - Small Button) --}}
-    <a href="{{ route('checkin') }}" 
-       class="flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors active:scale-95">
-      <div class="flex items-center justify-center {{ request()->routeIs('checkin') ? 'bg-primary' : 'bg-primary' }} text-white rounded-full size-12 shadow-lg shadow-primary/30">
-        <span class="material-symbols-outlined text-[24px]">check_circle</span>
-      </div>
-      <span class="text-[11px] font-semibold {{ request()->routeIs('checkin') ? 'text-primary' : 'text-gray-700 dark:text-gray-300' }} mt-0.5">Check-In</span>
-    </a>
-    
+  
     @if(Auth::user()->role_type === 'admin')
       {{-- Reports --}}
       <a href="{{ route('reports') }}" 
@@ -56,14 +67,7 @@
         <span class="text-[11px] font-medium">More</span>
       </button>
     @else
-      {{-- Support (User Only) --}}
-      <a href="{{ route('support') }}" 
-         class="flex flex-col items-center justify-center gap-0.5 flex-1 h-full {{ request()->routeIs('support') ? 'text-primary' : 'text-gray-500 dark:text-gray-400' }} transition-colors active:scale-95">
-        <span class="material-symbols-outlined text-[22px]">help</span>
-        <span class="text-[11px] font-medium">Support</span>
-      </a>
-      
-      {{-- More Menu --}}
+      {{-- More Menu (User) --}}
       <button id="mobile-more-toggle" 
               class="flex flex-col items-center justify-center gap-0.5 flex-1 h-full text-gray-500 dark:text-gray-400 transition-colors active:scale-95">
         <span class="material-symbols-outlined text-[22px]">menu</span>
@@ -144,6 +148,13 @@
           <span class="text-sm font-medium">Employees</span>
         </a>
 
+        {{-- Mission Check --}}
+        <a class="flex items-center gap-3 px-2 py-2.5 rounded-lg {{ request()->routeIs('mission') ? 'bg-primary text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all active:scale-[0.98]" 
+           href="{{ route('mission') }}">
+          <span class="material-symbols-outlined text-xl">task_alt</span>
+          <span class="text-sm font-medium">Mission</span>
+        </a>
+
         {{-- Map --}}
         <a class="flex items-center gap-3 px-2 py-2.5 rounded-lg {{ request()->routeIs('map*') ? 'bg-primary text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all active:scale-[0.98]" 
            href="{{ route('map.created') }}">
@@ -159,14 +170,14 @@
           <span class="material-symbols-outlined text-xl">settings</span>
           <span class="text-sm font-medium">Settings</span>
         </a>
-        
-        {{-- Support (Admin - in More menu) --}}
-        <a class="flex items-center gap-3 px-2 py-2.5 rounded-lg {{ request()->routeIs('support') ? 'bg-primary text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all active:scale-[0.98]" 
-           href="{{ route('support') }}">
-          <span class="material-symbols-outlined text-xl">help</span>
-          <span class="text-sm font-medium">Support</span>
-        </a>
       @endif
+      
+      {{-- Support (For All Users) --}}
+      <a class="flex items-center gap-3 px-2 py-2.5 rounded-lg {{ request()->routeIs('support') ? 'bg-primary text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all active:scale-[0.98]" 
+         href="{{ route('support') }}">
+        <span class="material-symbols-outlined text-xl">help</span>
+        <span class="text-sm font-medium">Support</span>
+      </a>
       
       {{-- Divider --}}
       <div class="border-t border-gray-100 dark:border-gray-800 my-2"></div>

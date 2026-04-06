@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Mission;
 use App\Models\User;
+use App\Services\TelegramService;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Http\Request;
@@ -17,11 +19,13 @@ class TelegramController extends Controller
     private $botToken;
     private $botUsername;
     private $client;
+    protected $telegramService;
 
-    public function __construct()
+    public function __construct(TelegramService $telegramService = null)
     {
         $this->botToken = env('TELEGRAM_BOT_TOKEN');
         $this->botUsername = env('TELEGRAM_BOT_USERNAME');
+        $this->telegramService = $telegramService ?? app(TelegramService::class);
         
         // Validate bot token format
         if (empty($this->botToken) || !preg_match('/^\d+:[A-Za-z0-9_-]+$/', $this->botToken)) {
@@ -35,25 +39,25 @@ class TelegramController extends Controller
         ]);
     }
 
+    // ============================================
+    // ACCOUNT BINDING METHODS
+    // ============================================
+
     public function initiateBind()
     {
         $user = Auth::user();
         
-        // Check if already bound
         if ($user->telegram_id) {
             return redirect()->back()->with('error', 'Your account is already bound to Telegram');
         }
 
-        // Generate unique binding token
         $token = Str::random(32);
         
-        // Store token with user ID and phone for 10 minutes
         Cache::put("telegram_bind_{$token}", [
             'user_id' => $user->id,
-            'user_phone' => $user->phone // Assuming user has phone in database
+            'user_phone' => $user->phone
         ], now()->addMinutes(10));
 
-        // Redirect to Telegram bot with start parameter
         $deepLink = "https://t.me/{$this->botUsername}?start=bind_{$token}";
         
         return redirect($deepLink);
@@ -63,12 +67,10 @@ class TelegramController extends Controller
     {
         $user = Auth::user();
         
-        // Check if account is bound
         if (!$user->telegram_id) {
             return redirect()->back()->with('error', 'Your account is not bound to any Telegram account');
         }
 
-        // Send notification to Telegram before unbinding
         if ($user->telegram_chat_id) {
             try {
                 $this->sendUnbindNotification($user->telegram_chat_id, $user->name ?? 'User');
@@ -77,10 +79,6 @@ class TelegramController extends Controller
             }
         }
 
-        // Store data for display
-        $telegramId = $user->telegram_id;
-        
-        // Remove Telegram binding
         $user->telegram_id = null;
         $user->telegram_chat_id = null;
         $user->save();
@@ -109,106 +107,239 @@ class TelegramController extends Controller
         }
     }
 
-public function webhook(Request $request)
-{
-    // Log incoming updates for debugging
-    \Log::info('Telegram webhook received', [
-        'update' => $request->all()
-    ]);
+    // ============================================
+    // WEBHOOK HANDLER
+    // ============================================
 
-    $update = $request->all();
+    public function webhook(Request $request)
+    {
+        Log::info('Telegram webhook received', ['update' => $request->all()]);
 
-    // Validate update structure
-    if (empty($update)) {
-        \Log::warning('Empty update received');
-        return response()->json(['ok' => false, 'error' => 'Empty update']);
+        $update = $request->all();
+
+        if (empty($update)) {
+            Log::warning('Empty update received');
+            return response()->json(['ok' => false, 'error' => 'Empty update']);
+        }
+
+        try {
+            // Handle callback queries (mission buttons) - PRIORITY!
+            if (isset($update['callback_query'])) {
+                $this->handleCallbackQuery($update['callback_query']);
+                return response()->json(['ok' => true]);
+            }
+
+            // Handle messages
+            if (isset($update['message']['text'])) {
+                $text = $update['message']['text'];
+                $chatId = $update['message']['chat']['id'];
+                $telegramUserId = $update['message']['from']['id'];
+
+                if (preg_match('/\/start bind_(.+)/', $text, $matches)) {
+                    $token = $matches[1];
+                    $this->handleBinding($chatId, $telegramUserId, $token);
+                }
+                elseif (trim($text) === '/start') {
+                    $this->handleStart($chatId, $telegramUserId);
+                }
+                elseif (trim($text) === '/unbind') {
+                    $this->handleBotUnbind($chatId, $telegramUserId);
+                }
+                elseif (trim($text) === '/status') {
+                    $this->handleStatus($chatId, $telegramUserId);
+                }
+                elseif (trim($text) === '/help') {
+                    $this->handleHelp($chatId);
+                }
+            }
+            // Handle phone number contact sharing
+            elseif (isset($update['message']['contact'])) {
+                $chatId = $update['message']['chat']['id'];
+                $telegramUserId = $update['message']['from']['id'];
+                $contact = $update['message']['contact'];
+                
+                if ($contact['user_id'] == $telegramUserId) {
+                    $phoneNumber = $contact['phone_number'];
+                    $this->verifyPhoneNumber($chatId, $telegramUserId, $phoneNumber);
+                } else {
+                    $this->sendMessage($chatId, '❌ Please share your own phone number, not someone else\'s.');
+                }
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Telegram webhook error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+
+        return response()->json(['ok' => true]);
     }
 
-    try {
-        // Handle messages
-        if (isset($update['message']['text'])) {
-            $text = $update['message']['text'];
-            $chatId = $update['message']['chat']['id'];
-            $telegramUserId = $update['message']['from']['id'];
+    // ============================================
+    // MISSION CALLBACK HANDLER
+    // ============================================
 
-            // Check if it's a start command with bind parameter
-            if (preg_match('/\/start bind_(.+)/', $text, $matches)) {
-                $token = $matches[1];
-                $this->handleBinding($chatId, $telegramUserId, $token);
-            }
-            // Handle /start command
-            elseif (trim($text) === '/start') {
-                $this->handleStart($chatId, $telegramUserId);
-            }
-            // Handle /unbind command from bot
-            elseif (trim($text) === '/unbind') {
-                $this->handleBotUnbind($chatId, $telegramUserId);
-            }
-            // Handle /status command
-            elseif (trim($text) === '/status') {
-                $this->handleStatus($chatId, $telegramUserId);
-            }
-            // Handle /help command
-            elseif (trim($text) === '/help') {
-                $this->handleHelp($chatId);
-            }
+    private function handleCallbackQuery($callbackQuery)
+    {
+        $callbackData = $callbackQuery['data'];
+        $chatId = $callbackQuery['message']['chat']['id'];
+        $messageId = $callbackQuery['message']['message_id'];
+
+        $admin = User::where('telegram_chat_id', $chatId)
+                    ->where('role_type', 'admin')
+                    ->first();
+
+        if (!$admin) {
+            $this->answerCallbackQuery($callbackQuery['id'], '❌ Unauthorized. Admin access required.');
+            return;
         }
-        // Handle phone number contact sharing
-        elseif (isset($update['message']['contact'])) {
-            $chatId = $update['message']['chat']['id'];
-            $telegramUserId = $update['message']['from']['id'];
-            $contact = $update['message']['contact'];
+
+        if (preg_match('/^approve_mission_(\d+)$/', $callbackData, $matches)) {
+            $this->handleApproveMission($matches[1], $admin, $chatId, $messageId, $callbackQuery['id']);
+        } elseif (preg_match('/^reject_mission_(\d+)$/', $callbackData, $matches)) {
+            $this->handleRejectMission($matches[1], $admin, $chatId, $messageId, $callbackQuery['id']);
+        }
+    }
+
+    private function handleApproveMission($missionId, $admin, $chatId, $messageId, $callbackQueryId)
+    {
+        $mission = Mission::with(['user', 'attendance'])->find($missionId);
+
+        if (!$mission) {
+            $this->answerCallbackQuery($callbackQueryId, '❌ Mission not found');
+            return;
+        }
+
+        if ($mission->status !== 'pending') {
+            $this->answerCallbackQuery($callbackQueryId, '⚠️ Mission already ' . $mission->status);
+            return;
+        }
+
+        try {
+            $mission->approve($admin->id);
+            $this->updateMissionMessageStatus($chatId, $messageId, $mission, 'approved', $admin->name);
             
-            // Verify it's the user's own phone number
-            if ($contact['user_id'] == $telegramUserId) {
-                $phoneNumber = $contact['phone_number'];
-                $this->verifyPhoneNumber($chatId, $telegramUserId, $phoneNumber);
-            } else {
-                $this->sendMessage($chatId, '❌ Please share your own phone number, not someone else\'s.');
-            }
-        }
-        // Handle callback queries (for inline buttons)
-        elseif (isset($update['callback_query'])) {
-            $this->handleCallbackQuery($update['callback_query']);
-        }
+            // Notify other admins
+            $this->telegramService->notifyAdminsAboutApproval($mission, $admin->name);
+            
+            $this->answerCallbackQuery($callbackQueryId, '✅ Mission approved successfully!');
+            Log::info("Mission #{$missionId} approved by admin {$admin->id} via Telegram");
 
-    } catch (\Exception $e) {
-        Log::error('Telegram webhook error', [
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
+        } catch (\Exception $e) {
+            Log::error("Error approving mission via Telegram: " . $e->getMessage());
+            $this->answerCallbackQuery($callbackQueryId, '❌ Error approving mission');
+        }
     }
 
-    return response()->json(['ok' => true]);
-}
-/**
- * Handle /start command
- */
-private function handleStart($chatId, $telegramUserId)
-{
-    $user = User::where('telegram_id', $telegramUserId)->first();
-    
-    if ($user) {
-        $message = "👋 <b>Welcome back, {$user->name}!</b>\n\n";
-        $message .= "Your account is already bound.\n\n";
-        $message .= "📧 Email: {$user->email}\n";
-        $message .= "📱 Phone: " . ($user->phone ?? 'N/A') . "\n\n";
-        $message .= "Use /status to see your account status\n";
-        $message .= "Use /help to see available commands";
-    } else {
-        $message = "👋 <b>Welcome to Attendify Bot!</b>\n\n";
-        $message .= "To get started, please bind your account from the website.\n\n";
-        $message .= "📱 Go to your account settings\n";
-        $message .= "🔗 Click 'Bind Telegram Account'\n";
-        $message .= "✅ Follow the instructions\n\n";
-        $message .= "Use /help to see available commands";
+    private function handleRejectMission($missionId, $admin, $chatId, $messageId, $callbackQueryId)
+    {
+        $mission = Mission::with(['user', 'attendance'])->find($missionId);
+
+        if (!$mission) {
+            $this->answerCallbackQuery($callbackQueryId, '❌ Mission not found');
+            return;
+        }
+
+        if ($mission->status !== 'pending') {
+            $this->answerCallbackQuery($callbackQueryId, '⚠️ Mission already ' . $mission->status);
+            return;
+        }
+
+        try {
+            $reason = "Rejected via Telegram by admin";
+            $mission->reject($admin->id, $reason);
+            $this->updateMissionMessageStatus($chatId, $messageId, $mission, 'rejected', $admin->name);
+            
+            // Notify other admins
+            $this->telegramService->notifyAdminsAboutRejection($mission, $admin->name, $reason);
+            
+            $this->answerCallbackQuery($callbackQueryId, '❌ Mission rejected. You can add a detailed reason on the website.');
+            Log::info("Mission #{$missionId} rejected by admin {$admin->id} via Telegram");
+
+        } catch (\Exception $e) {
+            Log::error("Error rejecting mission via Telegram: " . $e->getMessage());
+            $this->answerCallbackQuery($callbackQueryId, '❌ Error rejecting mission');
+        }
     }
-    
-    $this->sendMessage($chatId, $message);
-}
+
+    private function updateMissionMessageStatus($chatId, $messageId, $mission, $status, $adminName)
+    {
+        $statusEmoji = $status === 'approved' ? '✅' : '❌';
+        $statusText = ucfirst($status);
+        $statusKh = $status === 'approved' ? 'បានអនុម័ត' : 'បានបដិសេធ';
+
+        $updatedMessage = "📋 <b>ការស្នើសុំចូលធ្វើការបេសកកម្ម / MISSION CHECK-IN REQUEST</b>\n";
+        $updatedMessage .= "━━━━━━━━━━━━━━━━━━━━━━\n\n";
+        $updatedMessage .= "👤 <b>Employee:</b> {$mission->user->name}\n";
+        $updatedMessage .= "📅 <b>Date:</b> " . $mission->mission_date->format('F j, Y') . "\n";
+        $updatedMessage .= "🕐 <b>Request Time:</b> " . $mission->created_at->format('h:i A') . "\n\n";
+        $updatedMessage .= "{$statusEmoji} <b>Status:</b> {$statusKh} / {$statusText}\n";
+        $updatedMessage .= "👤 <b>By:</b> {$adminName}\n";
+        $updatedMessage .= "🕐 <b>Time:</b> " . now()->format('h:i A') . "\n";
+        $updatedMessage .= "\n━━━━━━━━━━━━━━━━━━━━━━";
+        $updatedMessage .= "\n<i>Mission ID: #{$mission->id}</i>";
+
+        try {
+            Http::post(
+                "https://api.telegram.org/bot{$this->botToken}/editMessageText",
+                [
+                    'chat_id' => $chatId,
+                    'message_id' => $messageId,
+                    'text' => $updatedMessage,
+                    'parse_mode' => 'HTML',
+                ]
+            );
+        } catch (\Exception $e) {
+            Log::error("Error updating Telegram message: " . $e->getMessage());
+        }
+    }
+
+    private function answerCallbackQuery($callbackQueryId, $text, $showAlert = true)
+    {
+        try {
+            Http::post(
+                "https://api.telegram.org/bot{$this->botToken}/answerCallbackQuery",
+                [
+                    'callback_query_id' => $callbackQueryId,
+                    'text' => $text,
+                    'show_alert' => $showAlert,
+                ]
+            );
+        } catch (\Exception $e) {
+            Log::error("Error answering callback query: " . $e->getMessage());
+        }
+    }
+
+    // ============================================
+    // BOT COMMAND HANDLERS
+    // ============================================
+
+    private function handleStart($chatId, $telegramUserId)
+    {
+        $user = User::where('telegram_id', $telegramUserId)->first();
+        
+        if ($user) {
+            $message = "👋 <b>Welcome back, {$user->name}!</b>\n\n";
+            $message .= "Your account is already bound.\n\n";
+            $message .= "📧 Email: {$user->email}\n";
+            $message .= "📱 Phone: " . ($user->phone ?? 'N/A') . "\n\n";
+            $message .= "Use /status to see your account status\n";
+            $message .= "Use /help to see available commands";
+        } else {
+            $message = "👋 <b>Welcome to Attendify Bot!</b>\n\n";
+            $message .= "To get started, please bind your account from the website.\n\n";
+            $message .= "📱 Go to your account settings\n";
+            $message .= "🔗 Click 'Bind Telegram Account'\n";
+            $message .= "✅ Follow the instructions\n\n";
+            $message .= "Use /help to see available commands";
+        }
+        
+        $this->sendMessage($chatId, $message);
+    }
+
     private function handleBotUnbind($chatId, $telegramUserId)
     {
-        // Find user by telegram_id
         $user = User::where('telegram_id', $telegramUserId)->first();
 
         if (!$user) {
@@ -216,10 +347,8 @@ private function handleStart($chatId, $telegramUserId)
             return;
         }
 
-        // Store user info for notification
         $userName = $user->name ?? 'User';
 
-        // Unbind the account
         $user->telegram_id = null;
         $user->telegram_chat_id = null;
         $user->save();
@@ -236,7 +365,6 @@ private function handleStart($chatId, $telegramUserId)
 
     private function handleStatus($chatId, $telegramUserId)
     {
-        // Find user by telegram_id
         $user = User::where('telegram_id', $telegramUserId)->first();
 
         if (!$user) {
@@ -248,16 +376,35 @@ private function handleStart($chatId, $telegramUserId)
             $message .= "✅ Account is bound\n\n";
             $message .= "👤 Name: " . ($user->name ?? 'N/A') . "\n";
             $message .= "📧 Email: " . ($user->email ?? 'N/A') . "\n";
-            $message .= "📱 Phone: " . ($user->phone ?? 'N/A') . "\n\n";
+            $message .= "📱 Phone: " . ($user->phone ?? 'N/A') . "\n";
+            $message .= "👔 Role: " . ($user->role_type ?? 'user') . "\n\n";
             $message .= "To unbind, use /unbind command or visit the website.";
         }
 
         $this->sendMessage($chatId, $message);
     }
 
+    private function handleHelp($chatId)
+    {
+        $message = "🤖 <b>Attendify Bot - Help</b>\n\n";
+        $message .= "<b>Available Commands:</b>\n\n";
+        $message .= "/start - Start the bot\n";
+        $message .= "/status - Check binding status\n";
+        $message .= "/unbind - Unbind your account\n";
+        $message .= "/help - Show this help message\n\n";
+        $message .= "<b>Features:</b>\n";
+        $message .= "• Receive check-in/out notifications\n";
+        $message .= "• Mission approval (for admins)\n";
+        $message .= "• Real-time attendance updates\n";
+        $message .= "• Account binding with phone verification\n\n";
+        $message .= "<b>Need Help?</b>\n";
+        $message .= "Contact your administrator for support.";
+
+        $this->sendMessage($chatId, $message);
+    }
+
     private function handleBinding($chatId, $telegramUserId, $token)
     {
-        // Retrieve binding data from cache
         $bindingData = Cache::get("telegram_bind_{$token}");
 
         if (!$bindingData) {
@@ -272,23 +419,18 @@ private function handleStart($chatId, $telegramUserId)
             return;
         }
 
-        // Check if this Telegram account is already bound to another user
         $existingUser = User::where('telegram_id', $telegramUserId)->first();
         if ($existingUser) {
             $this->sendMessage($chatId, '❌ This Telegram account is already bound to another user.');
             return;
         }
 
-        // Store pending verification
         Cache::put("telegram_verify_{$telegramUserId}", [
             'user_id' => $bindingData['user_id'],
             'expected_phone' => $bindingData['user_phone'] ?? null
         ], now()->addMinutes(10));
 
-        // Request phone number with custom keyboard
         $this->requestPhoneNumber($chatId, !empty($bindingData['user_phone']));
-
-        // Delete the binding token
         Cache::forget("telegram_bind_{$token}");
     }
 
@@ -346,9 +488,7 @@ private function handleStart($chatId, $telegramUserId)
             return;
         }
 
-        // Check if user has a phone number registered
         if (empty($verificationData['expected_phone']) || empty($user->phone)) {
-            // No phone number in account - save the provided phone and bind
             $user->phone = $phoneNumber;
             $user->telegram_id = $telegramUserId;
             $user->telegram_chat_id = $chatId;
@@ -367,11 +507,9 @@ private function handleStart($chatId, $telegramUserId)
             return;
         }
 
-        // Normalize phone numbers for comparison (remove + and spaces)
         $normalizedReceived = preg_replace('/[^0-9]/', '', $phoneNumber);
         $normalizedExpected = preg_replace('/[^0-9]/', '', $verificationData['expected_phone']);
 
-        // Check if phone numbers match
         if ($normalizedReceived !== $normalizedExpected) {
             $this->sendMessage(
                 $chatId, 
@@ -384,7 +522,6 @@ private function handleStart($chatId, $telegramUserId)
             return;
         }
 
-        // Phone number verified - bind the account
         $user->telegram_id = $telegramUserId;
         $user->telegram_chat_id = $chatId;
         $user->save();
@@ -398,7 +535,6 @@ private function handleStart($chatId, $telegramUserId)
             true
         );
 
-        // Clear the verification cache
         Cache::forget("telegram_verify_{$telegramUserId}");
     }
 
@@ -423,166 +559,141 @@ private function handleStart($chatId, $telegramUserId)
         }
     }
 
+    // ============================================
+    // WEBHOOK MANAGEMENT
+    // ============================================
 
-    /**
- * Handle help command
- */
-private function handleHelp($chatId)
-{
-    $message = "🤖 <b>Attendify Bot - Help</b>\n\n";
-    $message .= "<b>Available Commands:</b>\n\n";
-    $message .= "/start - Start the bot\n";
-    $message .= "/status - Check binding status\n";
-    $message .= "/unbind - Unbind your account\n";
-    $message .= "/help - Show this help message\n\n";
-    $message .= "<b>Features:</b>\n";
-    $message .= "• Receive check-in/out notifications\n";
-    $message .= "• Real-time attendance updates\n";
-    $message .= "• Account binding with phone verification\n\n";
-    $message .= "<b>Need Help?</b>\n";
-    $message .= "Contact your administrator for support.";
-
-    $this->sendMessage($chatId, $message);
-}
-
-public function setupWebhook()
-{
-    $botToken = env('TELEGRAM_BOT_TOKEN');
-    $webhookUrl = env('APP_URL') . '/api/telegram/webhook';
-    
-    if (empty($botToken)) {
-        return response()->json([
-            'success' => false,
-            'message' => 'TELEGRAM_BOT_TOKEN not set in .env file'
-        ], 500);
-    }
-
-    try {
-        // Set webhook
-        $response = Http::post("https://api.telegram.org/bot{$botToken}/setWebhook", [
-            'url' => $webhookUrl,
-            'allowed_updates' => ['message', 'callback_query'],
-            'drop_pending_updates' => true,
-            'max_connections' => 40,
-        ]);
-
-        $result = $response->json();
-
-        if ($result['ok']) {
-            // Get webhook info to verify
-            $infoResponse = Http::get("https://api.telegram.org/bot{$botToken}/getWebhookInfo");
-            $info = $infoResponse->json();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Webhook set successfully!',
-                'webhook_url' => $webhookUrl,
-                'webhook_info' => $info['result'] ?? []
-            ]);
-        } else {
+    public function setupWebhook()
+    {
+        $botToken = env('TELEGRAM_BOT_TOKEN');
+        $webhookUrl = env('APP_URL') . '/api/telegram/webhook';
+        
+        if (empty($botToken)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to set webhook',
-                'error' => $result['description'] ?? 'Unknown error'
-            ], 400);
+                'message' => 'TELEGRAM_BOT_TOKEN not set in .env file'
+            ], 500);
         }
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Exception occurred',
-            'error' => $e->getMessage()
-        ], 500);
-    }
-}
 
-/**
- * Get webhook info
- */
-public function webhookInfo()
-{
-    $botToken = env('TELEGRAM_BOT_TOKEN');
-    
-    if (empty($botToken)) {
-        return response()->json([
-            'success' => false,
-            'message' => 'TELEGRAM_BOT_TOKEN not set in .env file'
-        ], 500);
-    }
-
-    try {
-        $response = Http::get("https://api.telegram.org/bot{$botToken}/getWebhookInfo");
-        $result = $response->json();
-
-        if ($result['ok']) {
-            $info = $result['result'];
-            
-            return response()->json([
-                'success' => true,
-                'webhook_info' => [
-                    'url' => $info['url'] ?? 'Not set',
-                    'has_custom_certificate' => $info['has_custom_certificate'] ?? false,
-                    'pending_update_count' => $info['pending_update_count'] ?? 0,
-                    'max_connections' => $info['max_connections'] ?? 40,
-                    'last_error_date' => isset($info['last_error_date']) ? date('Y-m-d H:i:s', $info['last_error_date']) : null,
-                    'last_error_message' => $info['last_error_message'] ?? null,
-                    'ip_address' => $info['ip_address'] ?? null,
-                ]
+        try {
+            $response = Http::post("https://api.telegram.org/bot{$botToken}/setWebhook", [
+                'url' => $webhookUrl,
+                'allowed_updates' => ['message', 'callback_query'],
+                'drop_pending_updates' => true,
+                'max_connections' => 40,
             ]);
-        } else {
+
+            $result = $response->json();
+
+            if ($result['ok']) {
+                $infoResponse = Http::get("https://api.telegram.org/bot{$botToken}/getWebhookInfo");
+                $info = $infoResponse->json();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Webhook set successfully!',
+                    'webhook_url' => $webhookUrl,
+                    'webhook_info' => $info['result'] ?? []
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to set webhook',
+                    'error' => $result['description'] ?? 'Unknown error'
+                ], 400);
+            }
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to get webhook info',
-                'error' => $result['description'] ?? 'Unknown error'
-            ], 400);
+                'message' => 'Exception occurred',
+                'error' => $e->getMessage()
+            ], 500);
         }
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Exception occurred',
-            'error' => $e->getMessage()
-        ], 500);
-    }
-}
-
-/**
- * Remove webhook
- */
-public function removeWebhook()
-{
-    $botToken = env('TELEGRAM_BOT_TOKEN');
-    
-    if (empty($botToken)) {
-        return response()->json([
-            'success' => false,
-            'message' => 'TELEGRAM_BOT_TOKEN not set in .env file'
-        ], 500);
     }
 
-    try {
-        $response = Http::post("https://api.telegram.org/bot{$botToken}/deleteWebhook", [
-            'drop_pending_updates' => true
-        ]);
-
-        $result = $response->json();
-
-        if ($result['ok']) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Webhook removed successfully!'
-            ]);
-        } else {
+    public function webhookInfo()
+    {
+        $botToken = env('TELEGRAM_BOT_TOKEN');
+        
+        if (empty($botToken)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to remove webhook',
-                'error' => $result['description'] ?? 'Unknown error'
-            ], 400);
+                'message' => 'TELEGRAM_BOT_TOKEN not set in .env file'
+            ], 500);
         }
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Exception occurred',
-            'error' => $e->getMessage()
-        ], 500);
+
+        try {
+            $response = Http::get("https://api.telegram.org/bot{$botToken}/getWebhookInfo");
+            $result = $response->json();
+
+            if ($result['ok']) {
+                $info = $result['result'];
+                
+                return response()->json([
+                    'success' => true,
+                    'webhook_info' => [
+                        'url' => $info['url'] ?? 'Not set',
+                        'has_custom_certificate' => $info['has_custom_certificate'] ?? false,
+                        'pending_update_count' => $info['pending_update_count'] ?? 0,
+                        'max_connections' => $info['max_connections'] ?? 40,
+                        'allowed_updates' => $info['allowed_updates'] ?? [],
+                        'last_error_date' => isset($info['last_error_date']) ? date('Y-m-d H:i:s', $info['last_error_date']) : null,
+                        'last_error_message' => $info['last_error_message'] ?? null,
+                        'ip_address' => $info['ip_address'] ?? null,
+                    ]
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to get webhook info',
+                    'error' => $result['description'] ?? 'Unknown error'
+                ], 400);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Exception occurred',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
-}
+
+    public function removeWebhook()
+    {
+        $botToken = env('TELEGRAM_BOT_TOKEN');
+        
+        if (empty($botToken)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'TELEGRAM_BOT_TOKEN not set in .env file'
+            ], 500);
+        }
+
+        try {
+            $response = Http::post("https://api.telegram.org/bot{$botToken}/deleteWebhook", [
+                'drop_pending_updates' => true
+            ]);
+
+            $result = $response->json();
+
+            if ($result['ok']) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Webhook removed successfully!'
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to remove webhook',
+                    'error' => $result['description'] ?? 'Unknown error'
+                ], 400);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Exception occurred',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

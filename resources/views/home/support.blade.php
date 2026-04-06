@@ -412,14 +412,6 @@
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary transition-colors">
-              <div class="size-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-3">
-                <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">email</span>
-              </div>
-              <h3 class="font-bold text-gray-900 dark:text-white mb-2">Email Support</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Send us an email</p>
-              <a href="mailto:layhorth14@gmail.com" class="text-sm text-primary hover:underline">layhorth14@gmail.com</a>
-            </div>
 
             <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary transition-colors">
               <div class="size-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-3">
@@ -427,7 +419,7 @@
               </div>
               <h3 class="font-bold text-gray-900 dark:text-white mb-2">Phone Support</h3>
               <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Call us</p>
-              <a href="tel:+855966011905" class="text-sm text-primary hover:underline">+855 96 601 1905</a>
+              <a href="tel:+85599480804" class="text-sm text-primary hover:underline">+855 99 4808 04</a>
             </div>
 
             <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary transition-colors">
@@ -436,7 +428,7 @@
               </div>
               <h3 class="font-bold text-gray-900 dark:text-white mb-2">Telegram</h3>
               <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Message us</p>
-              <a href="https://t.me/Horth_lay" class="text-sm text-primary hover:underline">@horth_lay</a>
+              <a href="https://t.me/vongsophal" class="text-sm text-primary hover:underline">@vongsophal</a>
             </div>
           </div>
 
@@ -445,7 +437,7 @@
               <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">schedule</span>
               <div>
                 <p class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">Support Hours</p>
-                <p class="text-sm text-blue-700 dark:text-blue-300">Monday - Friday: 8:00 AM - 6:00 PM</p>
+                <p class="text-sm text-blue-700 dark:text-blue-300">Monday - Friday: 6:00 AM - 6:00 PM</p>
                 <p class="text-sm text-blue-700 dark:text-blue-300">Saturday: 9:00 AM - 1:00 PM</p>
                 <p class="text-sm text-blue-700 dark:text-blue-300">Sunday: Closed</p>
               </div>

@@ -120,6 +120,24 @@
         background-color: #fce7f3;
         color: #be185d;
       }
+
+      .status-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 7px;
+        font-weight: 600;
+      }
+
+      .status-present {
+        background-color: #dcfce7;
+        color: #166534;
+      }
+
+      .status-absent {
+        background-color: #fee2e2;
+        color: #991b1b;
+      }
     </style>
 </head>
   <body>
@@ -178,10 +196,6 @@
               <span class="font-semibold w-28">Employee ID:</span>
               <span>{{ $userId }}</span>
             </div>
-            {{-- <div class="flex">
-              <span class="font-semibold w-28">Gender:</span>
-              <span>{{ ucfirst($attendances->first()->user->gender ?? 'N/A') }}</span>
-            </div> --}}
             <div class="flex justify-end">
               <span class="font-semibold w-28">Phone:</span>
               <span>{{ $attendances->first()->user->phone ?? 'N/A' }}</span>
@@ -239,7 +253,6 @@
               <tr class="bg-gray-100">
                 <th class="text-center" style="width: 8%;">Rank</th>
                 <th class="text-left" style="width: 30%;">Employee Name</th>
-                {{-- <th class="text-center" style="width: 15%;">Gender</th> --}}
                 <th class="text-center" style="width: 17%;">Total Hours</th>
                 <th class="text-center" style="width: 15%;">Days</th>
                 <th class="text-center" style="width: 15%;">Avg Hrs/Day</th>
@@ -256,12 +269,6 @@
                     @endif
                   </td>
                   <td>{{ $topUser->name }}</td>
-                  {{-- <td class="text-center">
-                    <span class="gender-badge {{ $topUser->gender === 'male' ? 'gender-male' : 'gender-female' }}">
-                      {{ $topUser->gender === 'male' ? '♂' : '♀' }}
-                      {{ ucfirst($topUser->gender ?? 'N/A') }}
-                    </span>
-                  </td> --}}
                   <td class="text-center font-semibold">
                     @php
                       $hours = floor($topUser->total_hours ?? 0);
@@ -284,16 +291,16 @@
       <table class="text-[8px] mb-2">
         <thead>
           <tr class="bg-gray-100">
-            <th class="text-center" style="width: 5%;">No</th>
+            <th class="text-center" style="width: 4%;">No</th>
             @if(!$userId)
-              <th class="text-left" style="width: 20%;">Employee</th>
-              {{-- <th class="text-center" style="width: 10%;">Gender</th> --}}
+              <th class="text-left" style="width: 18%;">Employee</th>
             @endif
-            <th class="text-center" style="width: 12%;">Date</th>
-            <th class="text-center" style="width: 16%;">Morning</th>
-            <th class="text-center" style="width: 16%;">Afternoon</th>
-            <th class="text-center" style="width: 10%;">Total Hrs</th>
-            <th class="text-center" style="width: 11%;">Status</th>
+            <th class="text-center" style="width: 10%;">Date</th>
+            <th class="text-center" style="width: 14%;">Morning</th>
+            <th class="text-center" style="width: 14%;">Afternoon</th>
+            <th class="text-center" style="width: 8%;">Total Hrs</th>
+            <th class="text-center khmer-text" style="width: 10%;">Morning<br/>វត្តមាន</th>
+            <th class="text-center khmer-text" style="width: 10%;">Afternoon<br/>វត្តមាន</th>
           </tr>
         </thead>
         <tbody>
@@ -305,12 +312,6 @@
                   <div class="font-semibold">{{ $attendance->user->name }}</div>
                   <div class="text-[7px] text-gray-600">{{ $attendance->user->email }}</div>
                 </td>
-                {{-- <td class="text-center">
-                  <span class="gender-badge {{ $attendance->user->gender === 'male' ? 'gender-male' : 'gender-female' }}">
-                    {{ $attendance->user->gender === 'male' ? '♂' : '♀' }}
-                    {{ ucfirst($attendance->user->gender ?? 'N/A') }}
-                  </span>
-                </td> --}}
               @endif
               <td class="text-center">
                 <div class="font-semibold">{{ $attendance->attendance_date->format('M d') }}</div>
@@ -332,13 +333,19 @@
               </td>
               <td class="text-center font-bold">{{ $attendance->formatted_work_hours ?? '—' }}</td>
               <td class="text-center">
-                <span class="font-semibold
-                  {{ $attendance->status === 'on_time' ? 'text-green-600' : '' }}
-                  {{ $attendance->status === 'late' ? 'text-orange-600' : '' }}
-                  {{ $attendance->status === 'absent' ? 'text-red-600' : '' }}
-                  {{ $attendance->status === 'leave' ? 'text-purple-600' : '' }}
-                ">
-                  {{ strtoupper(str_replace('_', ' ', $attendance->status)) }}
+                @php
+                  $morningPresent = $attendance->morning_work_hours !== null && $attendance->morning_work_hours > 0;
+                @endphp
+                <span class="status-badge khmer-text {{ $morningPresent ? 'status-present' : 'status-absent' }}">
+                  {{ $morningPresent ? 'វត្តមាន' : 'អវត្តមាន' }}
+                </span>
+              </td>
+              <td class="text-center">
+                @php
+                  $afternoonPresent = $attendance->afternoon_work_hours !== null && $attendance->afternoon_work_hours > 0;
+                @endphp
+                <span class="status-badge khmer-text {{ $afternoonPresent ? 'status-present' : 'status-absent' }}">
+                  {{ $afternoonPresent ? 'វត្តមាន' : 'អវត្តមាន' }}
                 </span>
               </td>
             </tr>
@@ -358,23 +365,23 @@
             <table class="text-[8px] mb-2">
               <thead>
                 <tr class="bg-gray-100">
-                  <th class="text-center" style="width: 5%;">No</th>
+                  <th class="text-center" style="width: 4%;">No</th>
                   @if(!$userId)
-                    <th class="text-left" style="width: 20%;">Employee</th>
-                    {{-- <th class="text-center" style="width: 10%;">Gender</th> --}}
+                    <th class="text-left" style="width: 18%;">Employee</th>
                   @endif
-                  <th class="text-center" style="width: 12%;">Date</th>
-                  <th class="text-center" style="width: 16%;">Morning</th>
-                  <th class="text-center" style="width: 16%;">Afternoon</th>
-                  <th class="text-center" style="width: 10%;">Total Hrs</th>
-                  <th class="text-center" style="width: 11%;">Status</th>
+                  <th class="text-center" style="width: 10%;">Date</th>
+                  <th class="text-center" style="width: 14%;">Morning</th>
+                  <th class="text-center" style="width: 14%;">Afternoon</th>
+                  <th class="text-center" style="width: 8%;">Total Hrs</th>
+                  <th class="text-center khmer-text" style="width: 10%;">Morning<br/>វត្តមាន</th>
+                  <th class="text-center khmer-text" style="width: 10%;">Afternoon<br/>វត្តមាន</th>
                 </tr>
               </thead>
               <tbody>
             @endif
           @empty
             <tr>
-              <td colspan="{{ $userId ? '6' : '8' }}" class="text-center py-3">
+              <td colspan="{{ $userId ? '6' : '7' }}" class="text-center py-3">
                 No attendance records found for the selected period.
               </td>
             </tr>
@@ -401,8 +408,8 @@
           <div>• All times are based on the system timezone and office location verification.</div>
           <div>• Work hours are calculated from morning and afternoon sessions combined.</div>
           <div>• Morning Session: Typically 07:30 AM - 11:30 AM | Afternoon Session: Typically 02:00 PM - 05:30 PM</div>
-          <div>• Status indicators: ON TIME (arrived within grace period), LATE (arrived after grace period), ABSENT (no check-in), LEAVE (scheduled day off).</div>
-          {{-- <div>• Gender information is displayed for statistical and HR purposes only.</div> --}}
+          <div class="khmer-text">• <strong>វត្តមាន</strong> (Present) indicates work hours recorded for the session. <strong>អវត្តមាន</strong> (Absent) indicates no work hours for the session.</div>
+          <div>• Session attendance is determined by actual work hours, not just check-in/check-out times.</div>
           <div>• For discrepancies or questions, please contact the HR department.</div>
           <div>• This document is confidential and intended for authorized personnel only.</div>
         </div>
