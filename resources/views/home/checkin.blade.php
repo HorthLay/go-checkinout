@@ -181,6 +181,17 @@
         color: white;
       }
 
+      /* Sound toggle button */
+      .sound-toggle-btn {
+        transition: all 0.2s ease;
+      }
+      .sound-toggle-btn.muted {
+        color: #ef4444;
+      }
+      .sound-toggle-btn:not(.muted) {
+        color: #135bec;
+      }
+
       /* Mobile-optimized spacing */
       @media (max-width: 640px) {
         .mobile-compact {
@@ -260,6 +271,12 @@
 
       <!-- Main Content - Mobile First -->
       <main class="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-10">
+        <!-- Hidden flash data for sound triggers -->
+        <div id="flash-data"
+             data-success="@if(session('success')){{ session('success') }}@endif"
+             data-error="@if(session('error')){{ session('error') }}@endif"
+             class="hidden"></div>
+
         <!-- Success/Error Messages - Mobile Optimized -->
         @if(session('success'))
           <div class="mb-4 sm:mb-6 p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg sm:rounded-xl flex items-start sm:items-center gap-2 sm:gap-3">
@@ -276,6 +293,21 @@
         @endif
 
         <div class="max-w-4xl mx-auto">
+          <!-- Toolbar: Sound Toggle -->
+          <div class="mb-3 sm:mb-4 flex items-center justify-end">
+            <button
+              type="button"
+              id="sound-toggle"
+              onclick="SoundManager.toggleMute()"
+              class="sound-toggle-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-xs sm:text-sm font-medium"
+              aria-label="Toggle notification sound"
+              title="Toggle notification sound"
+            >
+              <span id="sound-icon" class="material-symbols-outlined text-lg sm:text-xl">volume_up</span>
+              <span id="sound-label" class="hidden sm:inline">Sound On</span>
+            </button>
+          </div>
+
           <!-- Tabs - Mobile Optimized - MOVED TO TOP -->
           <div class="mb-4 sm:mb-6">
             <div class="bg-surface-light dark:bg-surface-dark rounded-lg sm:rounded-xl border border-gray-100 dark:border-gray-800 p-1 flex gap-1 w-full">
@@ -563,7 +595,118 @@
     </div>
 @livewireScripts
   <script>
-      // Mobile Menu & Profile Dropdown
+      // ================== SOUND MANAGER ==================
+      // Sounds on this page ONLY play when redirected back from the map
+      // page with a flash message. Scan and upload actions are silent.
+      const SoundManager = {
+        STORAGE_KEY: 'attendify_sound_muted',
+        isMuted: false,
+        unlocked: false,
+        sounds: {},
+
+        init() {
+          this.isMuted = localStorage.getItem(this.STORAGE_KEY) === 'true';
+
+          this.sounds = {
+            checkin:       new Audio("{{ asset('sounds/scan-checkin.mp3') }}"),
+            checkout:      new Audio("{{ asset('sounds/scan-checkout.mp3') }}"),
+            errorCheckin:  new Audio("{{ asset('sounds/error-scan-checkin.mp3') }}"),
+            errorCheckout: new Audio("{{ asset('sounds/error-scan-checkout.mp3') }}"),
+          };
+          Object.values(this.sounds).forEach(a => { a.preload = 'auto'; a.volume = 0.8; });
+
+          this.updateUI();
+
+          // Unlock audio on first user interaction (autoplay policy workaround)
+          const unlock = () => {
+            if (this.unlocked) return;
+            this.unlocked = true;
+            Object.values(this.sounds).forEach(a => {
+              a.play().then(() => { a.pause(); a.currentTime = 0; }).catch(() => {});
+            });
+            document.removeEventListener('click', unlock);
+            document.removeEventListener('touchstart', unlock);
+          };
+          document.addEventListener('click', unlock);
+          document.addEventListener('touchstart', unlock);
+        },
+
+        play(name) {
+          if (this.isMuted) return;
+          const audio = this.sounds[name];
+          if (!audio) return;
+          try {
+            audio.currentTime = 0;
+            audio.play().catch(err => console.log('Audio play blocked:', err));
+          } catch (e) {
+            console.log('Audio error:', e);
+          }
+        },
+
+        // Decide check-in vs check-out from a flash message string
+        playFromMessage(message, isError = false) {
+          if (!message) return;
+          const lower = message.toLowerCase();
+          const isCheckout = lower.includes('check-out') || lower.includes('check out') || lower.includes('checkout');
+
+          if (isError) {
+            this.play(isCheckout ? 'errorCheckout' : 'errorCheckin');
+          } else {
+            this.play(isCheckout ? 'checkout' : 'checkin');
+          }
+        },
+
+        toggleMute() {
+          this.isMuted = !this.isMuted;
+          localStorage.setItem(this.STORAGE_KEY, this.isMuted);
+          this.updateUI();
+
+          // Confirmation chime when un-muting
+          if (!this.isMuted) {
+            this.play('checkin');
+          }
+        },
+
+        updateUI() {
+          const btn = document.getElementById('sound-toggle');
+          const icon = document.getElementById('sound-icon');
+          const label = document.getElementById('sound-label');
+          if (!btn || !icon) return;
+
+          if (this.isMuted) {
+            btn.classList.add('muted');
+            icon.textContent = 'volume_off';
+            if (label) label.textContent = 'Sound Off';
+            btn.setAttribute('aria-label', 'Unmute notification sounds');
+            btn.setAttribute('title', 'Sounds are muted — tap to enable');
+          } else {
+            btn.classList.remove('muted');
+            icon.textContent = 'volume_up';
+            if (label) label.textContent = 'Sound On';
+            btn.setAttribute('aria-label', 'Mute notification sounds');
+            btn.setAttribute('title', 'Tap to mute notification sounds');
+          }
+        }
+      };
+
+      // Initialize + play flash-message sound (only on page load after redirect)
+      document.addEventListener('DOMContentLoaded', () => {
+        SoundManager.init();
+
+        const flash = document.getElementById('flash-data');
+        if (flash) {
+          const success = flash.dataset.success;
+          const error   = flash.dataset.error;
+
+          if (success) {
+            setTimeout(() => SoundManager.playFromMessage(success, false), 250);
+          } else if (error) {
+            setTimeout(() => SoundManager.playFromMessage(error, true), 250);
+          }
+        }
+      });
+
+      // ================== Mobile Menu & Profile Dropdown ==================
       const menuToggle = document.getElementById("menu-toggle");
       const mobileMenu = document.getElementById("mobile-menu");
       const profileToggle = document.getElementById("profile-toggle");
@@ -592,7 +735,7 @@
         }
       });
 
-      // Tab Switching
+      // ================== Tab Switching ==================
       function switchTab(tab) {
         const scanTab = document.getElementById('scan-tab');
         const uploadTab = document.getElementById('upload-tab');
@@ -610,14 +753,13 @@
           tabUploadBtn.classList.add('active');
           tabScanBtn.classList.remove('active');
           
-          // Stop scanner if it's running
           if (html5QrCode) {
             stopScanner();
           }
         }
       }
 
-      // QR Scanner with Type Detection
+      // ================== QR Scanner (silent — no sounds here) ==================
       let html5QrCode = null;
 
       function startScanner() {
@@ -631,11 +773,9 @@
 
         html5QrCode = new Html5Qrcode("qr-reader");
         
-        // Mobile-optimized scanner configuration
         const config = {
           fps: 10,
           qrbox: function(viewfinderWidth, viewfinderHeight) {
-            // Calculate responsive QR box size
             const minDimension = Math.min(viewfinderWidth, viewfinderHeight);
             const qrboxSize = Math.floor(minDimension * 0.7);
             return {
@@ -649,13 +789,10 @@
         html5QrCode.start(
           { facingMode: "environment" },
           config,
-          (decodedText, decodedResult) => {
-            // Validate and route QR code
+          (decodedText) => {
             handleQRCode(decodedText);
           },
-          (errorMessage) => {
-            // Handle scan errors silently
-          }
+          () => { /* silent */ }
         ).catch((err) => {
           console.error('Error starting scanner:', err);
           alert('Unable to start camera. Please check camera permissions.');
@@ -676,9 +813,7 @@
         }
       }
 
-      // Handle QR Code and determine type
       function handleQRCode(qrData) {
-        // Define your QR code patterns here
         const attendancePattern = /attendance/i;
         const missionPattern = /mission/i;
 
@@ -692,13 +827,13 @@
           targetRoute = `{{ route('attendance.mission') }}?qr=${encodeURIComponent(qrData)}`;
           qrType = 'Mission';
         } else {
-          // Invalid QR code
           showInvalidQRError();
           stopScanner();
           return;
         }
 
-        // Show success message with type
+        // No sound — silent. Sound plays after map page redirects back.
+
         document.getElementById('scanned-data').classList.remove('hidden');
         document.getElementById('scanned-data').innerHTML = `
           <div class="flex items-start gap-2 sm:gap-3">
@@ -710,22 +845,21 @@
           </div>
         `;
         
-        // Stop scanner
         stopScanner();
         
-        // Redirect to appropriate route
         setTimeout(() => {
           window.location.href = targetRoute;
         }, 1500);
       }
 
       function showInvalidQRError() {
+        // No sound — silent.
         const scannedData = document.getElementById('scanned-data');
         scannedData.classList.remove('hidden');
         scannedData.className = 'mt-3 sm:mt-4 p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg sm:rounded-xl';
         scannedData.innerHTML = `
           <div class="flex items-start gap-2 sm:gap-3">
-            <span class="material-symbols-oriented text-red-600 dark:text-red-400 text-lg sm:text-xl">error</span>
+            <span class="material-symbols-outlined text-red-600 dark:text-red-400 text-lg sm:text-xl">error</span>
             <div class="flex-1">
               <p class="text-xs sm:text-sm font-semibold text-red-900 dark:text-red-100 mb-1">Invalid QR Code</p>
               <p class="text-xs text-red-700 dark:text-red-300">Not valid for attendance or mission. Please scan correct QR.</p>
@@ -733,14 +867,13 @@
           </div>
         `;
 
-        // Clear error after 3 seconds
         setTimeout(() => {
           scannedData.classList.add('hidden');
           scannedData.className = 'hidden mt-3 sm:mt-4 p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg sm:rounded-xl';
         }, 3000);
       }
 
-      // Upload and Decode QR Code
+      // ================== Upload & Decode (silent — no sounds here) ==================
       let uploadedFile = null;
 
       function handleDragOver(e) {
@@ -781,7 +914,6 @@
 
         uploadedFile = file;
         
-        // Preview image
         const reader = new FileReader();
         reader.onload = (e) => {
           document.getElementById('uploaded-image').src = e.target.result;
@@ -789,7 +921,6 @@
           document.getElementById('upload-preview').classList.remove('hidden');
           document.getElementById('clear-upload-btn').classList.remove('hidden');
           
-          // Auto-decode
           decodeUploadedQR();
         };
         reader.readAsDataURL(file);
@@ -798,12 +929,10 @@
       function decodeUploadedQR() {
         const img = document.getElementById('uploaded-image');
         
-        // Show processing
         document.getElementById('decode-processing').classList.remove('hidden');
         document.getElementById('decode-success').classList.add('hidden');
         document.getElementById('decode-error').classList.add('hidden');
 
-        // Wait for image to load
         img.onload = () => {
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
@@ -818,10 +947,9 @@
           document.getElementById('decode-processing').classList.add('hidden');
 
           if (code) {
-            // Validate and route QR code
             handleUploadedQRCode(code.data);
           } else {
-            // Error - no QR found
+            // No sound — silent failure
             document.getElementById('decode-success').classList.add('hidden');
             document.getElementById('decode-error').classList.remove('hidden');
           }
@@ -829,7 +957,6 @@
       }
 
       function handleUploadedQRCode(qrData) {
-        // Define your QR code patterns here (same as scanner)
         const attendancePattern = /attendance/i;
         const missionPattern = /mission/i;
 
@@ -843,7 +970,7 @@
           targetRoute = `{{ route('attendance.mission') }}?qr=${encodeURIComponent(qrData)}`;
           qrType = 'Mission';
         } else {
-          // Invalid QR code
+          // No sound — silent invalid
           document.getElementById('decode-error').classList.remove('hidden');
           document.getElementById('decode-error').innerHTML = `
             <div class="flex items-start gap-2 sm:gap-3">
@@ -857,7 +984,8 @@
           return;
         }
 
-        // Success
+        // No sound — silent. Sound plays after map page redirects back.
+
         document.getElementById('decode-success').classList.remove('hidden');
         document.getElementById('decode-error').classList.add('hidden');
         document.getElementById('decode-success').innerHTML = `
@@ -870,7 +998,6 @@
           </div>
         `;
         
-        // Redirect to verification
         setTimeout(() => {
           window.location.href = targetRoute;
         }, 1500);

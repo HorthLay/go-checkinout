@@ -70,7 +70,16 @@
         <span class="material-symbols-outlined {{ request()->routeIs('reports') ? '' : 'text-gray-500 group-hover:text-primary' }} transition-colors">bar_chart</span>
         <span class="font-medium {{ request()->routeIs('reports') ? '' : 'group-hover:text-gray-900 dark:group-hover:text-white' }} transition-colors">Reports</span>
       </a>
+
+        {{-- Reports --}}
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('reports.violations') ? 'bg-primary text-white shadow-md shadow-primary/25' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50' }} transition-all group" 
+         href="{{ route('reports.violations') }}">
+        <span class="material-symbols-outlined {{ request()->routeIs('reports.violations') ? '' : 'text-gray-500 group-hover:text-primary' }} transition-colors">bar_chart</span>
+        <span class="font-medium {{ request()->routeIs('reports.violations') ? '' : 'group-hover:text-gray-900 dark:group-hover:text-white' }} transition-colors">Reports Violations</span>
+      </a>
     @endif
+
+    
     
     
     {{-- Admin Only Section --}}

@@ -714,12 +714,7 @@ public function deleteNotification($id)
     return back()->with('success', 'Notification deleted successfully');
 }
 
-/**
- * Delete all read notifications
- */
-/**
- * Delete all read notifications
- */
+
 public function deleteAllReadNotifications()
 {
     try {
@@ -751,4 +746,178 @@ public function deleteAllReadNotifications()
         return back()->with('error', 'Failed to delete notifications. Please try again.');
     }
 }
+
+
+
+
+public function reportViolations(Request $request)
+{
+    $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
+    $endDate   = $request->input('end_date',   now()->endOfMonth()->format('Y-m-d'));
+    $userId    = $request->input('user_id');
+    $type      = $request->input('type'); // optional filter by single violation type
+ 
+    // Base query: only working days (Mon–Fri)
+    $query = Attendance::with('user')
+        ->whereBetween('attendance_date', [$startDate, $endDate])
+        ->whereRaw('DAYOFWEEK(attendance_date) BETWEEN 2 AND 6') // Mon–Fri
+        ->when($userId, fn($q) => $q->where('user_id', $userId))
+        ->where(function ($q) use ($type) {
+            if ($type === 'late_morning_in') {
+                // morning check-in after 09:00
+                $q->whereRaw("TIME(morning_check_in) > '09:00:00'");
+            } elseif ($type === 'early_morning_out') {
+                // morning check-out before 11:30
+                $q->whereRaw("TIME(morning_check_out) < '11:30:00'")
+                  ->whereNotNull('morning_check_out');
+            } elseif ($type === 'late_afternoon_in') {
+                // afternoon check-in after 15:00
+                $q->whereRaw("TIME(afternoon_check_in) > '15:00:00'");
+            } elseif ($type === 'early_afternoon_out') {
+                // afternoon check-out before 17:00
+                $q->whereRaw("TIME(afternoon_check_out) < '17:00:00'")
+                  ->whereNotNull('afternoon_check_out');
+            } else {
+                // ANY violation
+                $q->where(function ($inner) {
+                    $inner->whereRaw("TIME(morning_check_in) > '09:00:00'")
+                          ->orWhere(function ($o) {
+                              $o->whereNotNull('morning_check_out')
+                                ->whereRaw("TIME(morning_check_out) < '11:30:00'");
+                          })
+                          ->orWhereRaw("TIME(afternoon_check_in) > '15:00:00'")
+                          ->orWhere(function ($o) {
+                              $o->whereNotNull('afternoon_check_out')
+                                ->whereRaw("TIME(afternoon_check_out) < '17:00:00'");
+                          });
+                });
+            }
+        })
+        ->orderByDesc('attendance_date')
+        ->orderBy(fn($q) => $q->select('name')->from('users')->whereColumn('users.id', 'attendances.user_id'));
+ 
+    // Stats (always over full date range, no type filter)
+    $allForStats = Attendance::with('user')
+        ->whereBetween('attendance_date', [$startDate, $endDate])
+        ->whereRaw('DAYOFWEEK(attendance_date) BETWEEN 2 AND 6')
+        ->when($userId, fn($q) => $q->where('user_id', $userId))
+        ->get();
+ 
+    $stats = [
+        'late_morning_in'    => $allForStats->filter(fn($a) => $a->morning_check_in   && $a->morning_check_in->format('H:i')   > '09:00')->count(),
+        'early_morning_out'  => $allForStats->filter(fn($a) => $a->morning_check_out  && $a->morning_check_out->format('H:i')  < '11:30')->count(),
+        'late_afternoon_in'  => $allForStats->filter(fn($a) => $a->afternoon_check_in  && $a->afternoon_check_in->format('H:i')  > '15:00')->count(),
+        'early_afternoon_out'=> $allForStats->filter(fn($a) => $a->afternoon_check_out && $a->afternoon_check_out->format('H:i') < '17:00')->count(),
+    ];
+ 
+    $violations = $query->paginate(20)->withQueryString();
+    $allUsers   = User::where('role_type', 'user')->orderBy('name')->get();
+ 
+    return view('admin.report-violations', compact(
+        'violations', 'stats', 'allUsers',
+        'startDate', 'endDate', 'userId', 'type'
+    ));
+}
+ 
+/**
+ * Export violations to CSV
+ */
+public function exportViolationsCSV(Request $request)
+{
+    $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
+    $endDate   = $request->input('end_date',   now()->endOfMonth()->format('Y-m-d'));
+    $userId    = $request->input('user_id');
+    $type      = $request->input('type');
+ 
+    $rows = Attendance::with('user')
+        ->whereBetween('attendance_date', [$startDate, $endDate])
+        ->whereRaw('DAYOFWEEK(attendance_date) BETWEEN 2 AND 6')
+        ->when($userId, fn($q) => $q->where('user_id', $userId))
+        ->where(function ($q) use ($type) {
+            if ($type === 'late_morning_in') {
+                $q->whereRaw("TIME(morning_check_in) > '09:00:00'");
+            } elseif ($type === 'early_morning_out') {
+                $q->whereNotNull('morning_check_out')
+                  ->whereRaw("TIME(morning_check_out) < '11:30:00'");
+            } elseif ($type === 'late_afternoon_in') {
+                $q->whereRaw("TIME(afternoon_check_in) > '15:00:00'");
+            } elseif ($type === 'early_afternoon_out') {
+                $q->whereNotNull('afternoon_check_out')
+                  ->whereRaw("TIME(afternoon_check_out) < '17:00:00'");
+            } else {
+                $q->where(function ($inner) {
+                    $inner->whereRaw("TIME(morning_check_in) > '09:00:00'")
+                          ->orWhere(function ($o) {
+                              $o->whereNotNull('morning_check_out')
+                                ->whereRaw("TIME(morning_check_out) < '11:30:00'");
+                          })
+                          ->orWhereRaw("TIME(afternoon_check_in) > '15:00:00'")
+                          ->orWhere(function ($o) {
+                              $o->whereNotNull('afternoon_check_out')
+                                ->whereRaw("TIME(afternoon_check_out) < '17:00:00'");
+                          });
+                });
+            }
+        })
+        ->orderBy('attendance_date')
+        ->get();
+ 
+    $filename = 'violations-report-' . now()->format('Y-m-d-His') . '.csv';
+ 
+    $headers = [
+        'Content-Type'        => 'text/csv; charset=utf-8',
+        'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        'Pragma'              => 'no-cache',
+        'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+        'Expires'             => '0',
+    ];
+ 
+    $callback = function () use ($rows) {
+        $file = fopen('php://output', 'w');
+        fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF)); // UTF-8 BOM
+ 
+        fputcsv($file, [
+            'Employee', 'Date', 'Day',
+            'Morning In', 'Morning In Violation',
+            'Morning Out', 'Morning Out Violation',
+            'Afternoon In', 'Afternoon In Violation',
+            'Afternoon Out', 'Afternoon Out Violation',
+            'Flags',
+        ]);
+ 
+        foreach ($rows as $row) {
+            $mIn  = $row->morning_check_in;
+            $mOut = $row->morning_check_out;
+            $aIn  = $row->afternoon_check_in;
+            $aOut = $row->afternoon_check_out;
+ 
+            $mInViolation  = $mIn  && $mIn->format('H:i')  > '09:00' ? 'Late (' . $mIn->format('h:i A') . ')'  : '';
+            $mOutViolation = $mOut && $mOut->format('H:i') < '11:30' ? 'Early (' . $mOut->format('h:i A') . ')' : '';
+            $aInViolation  = $aIn  && $aIn->format('H:i')  > '15:00' ? 'Late (' . $aIn->format('h:i A') . ')'  : '';
+            $aOutViolation = $aOut && $aOut->format('H:i') < '17:00' ? 'Early (' . $aOut->format('h:i A') . ')' : '';
+ 
+            $flags = array_filter([$mInViolation, $mOutViolation, $aInViolation, $aOutViolation]);
+ 
+            fputcsv($file, [
+                $row->user->name,
+                $row->attendance_date->format('Y-m-d'),
+                $row->attendance_date->format('l'),
+                $mIn  ? $mIn->format('h:i A')  : '-',
+                $mInViolation  ?: 'OK',
+                $mOut ? $mOut->format('h:i A') : '-',
+                $mOutViolation ?: 'OK',
+                $aIn  ? $aIn->format('h:i A')  : '-',
+                $aInViolation  ?: 'OK',
+                $aOut ? $aOut->format('h:i A') : '-',
+                $aOutViolation ?: 'OK',
+                implode(' | ', $flags),
+            ]);
+        }
+ 
+        fclose($file);
+    };
+ 
+    return response()->stream($callback, 200, $headers);
+}
+ 
 }

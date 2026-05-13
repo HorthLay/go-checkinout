@@ -99,6 +99,10 @@ Route::delete('/notifications/delete-all-read', [AdminController::class, 'delete
      Route::get('/reports/print', [AdminController::class, 'reportPrint'])->name('reports.print');
      Route::get('/reports/export-csv', [AdminController::class, 'exportCSV'])->name('reports.export-csv');
 
+     Route::get('/reports/violations', [AdminController::class, 'reportViolations'])->name('reports.violations');
+     Route::get('/reports/export-csv/violations', [AdminController::class, 'exportViolationsCSV'])->name('reports.violations.export');
+
+
     //  created map
  Route::get('/map', [AdminController::class, 'mapcreated'])->name('map.created');
     Route::get('/map/create', [AdminController::class, 'create'])->name('map.create');

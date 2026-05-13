@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 class TelegramPolling extends Command
 {
+    
     protected $signature = 'telegram:polling {--reset : Reset offset to start from beginning}';
     protected $description = 'Run Telegram bot with long polling for localhost testing';
 
@@ -21,24 +22,26 @@ class TelegramPolling extends Command
     public function __construct()
     {
         parent::__construct();
+        // No output calls here — output is not initialized until handle()
+    }
+
+    public function handle()
+    {
         $this->botToken = env('TELEGRAM_BOT_TOKEN');
-        
+
         // Validate bot token
         if (empty($this->botToken) || !preg_match('/^\d+:[A-Za-z0-9_-]+$/', $this->botToken)) {
             $this->error('Invalid TELEGRAM_BOT_TOKEN format in .env file');
-            exit(1);
+            return 1;
         }
-        
+
         $this->client = new Client([
             'base_uri' => "https://api.telegram.org/bot{$this->botToken}/",
             'timeout' => 35,
             'verify' => true, // Set to false for localhost testing if needed
             'http_errors' => false,
         ]);
-    }
 
-    public function handle()
-    {
         // Register signal handlers for graceful shutdown
         if (extension_loaded('pcntl')) {
             pcntl_signal(SIGTERM, [$this, 'handleShutdown']);
