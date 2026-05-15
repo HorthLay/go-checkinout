@@ -69,7 +69,7 @@
                     <span class="material-symbols-outlined text-amber-500">warning</span>
                     Time Violations Report
                 </h1>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Late check-ins &amp; early check-outs outside allowed windows</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Late check-ins &amp; out-of-window check-outs</p>
             </div>
             @include('home.Layouts.header')
         </header>
@@ -87,8 +87,8 @@
                 </div>
                 <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl p-3 md:p-4">
                     <p class="text-[10px] md:text-xs font-semibold text-orange-700 dark:text-orange-400 uppercase mb-1">🌞 Morning Check-Out</p>
-                    <p class="text-sm md:text-base font-bold text-orange-900 dark:text-orange-100">Before 11:30 AM</p>
-                    <p class="text-[10px] md:text-xs text-orange-600 dark:text-orange-400 mt-0.5">Flagged as early</p>
+                    <p class="text-sm md:text-base font-bold text-orange-900 dark:text-orange-100">11:00 – 12:00 PM</p>
+                    <p class="text-[10px] md:text-xs text-orange-600 dark:text-orange-400 mt-0.5">Outside window = early / late</p>
                 </div>
                 <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-3 md:p-4">
                     <p class="text-[10px] md:text-xs font-semibold text-purple-700 dark:text-purple-400 uppercase mb-1">🌅 Afternoon Check-In</p>
@@ -97,8 +97,8 @@
                 </div>
                 <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 md:p-4">
                     <p class="text-[10px] md:text-xs font-semibold text-red-700 dark:text-red-400 uppercase mb-1">🌅 Afternoon Check-Out</p>
-                    <p class="text-sm md:text-base font-bold text-red-900 dark:text-red-100">Before 05:00 PM</p>
-                    <p class="text-[10px] md:text-xs text-red-600 dark:text-red-400 mt-0.5">Flagged as early</p>
+                    <p class="text-sm md:text-base font-bold text-red-900 dark:text-red-100">05:00 – 06:00 PM</p>
+                    <p class="text-[10px] md:text-xs text-red-600 dark:text-red-400 mt-0.5">Outside window = early / late</p>
                 </div>
             </div>
 
@@ -131,10 +131,12 @@
                         <select name="type"
                             class="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent">
                             <option value="">All Violations</option>
-                            <option value="late_morning_in"   {{ $type === 'late_morning_in'   ? 'selected' : '' }}>Late Morning Check-In</option>
-                            <option value="early_morning_out" {{ $type === 'early_morning_out' ? 'selected' : '' }}>Early Morning Check-Out</option>
-                            <option value="late_afternoon_in" {{ $type === 'late_afternoon_in' ? 'selected' : '' }}>Late Afternoon Check-In</option>
-                            <option value="early_afternoon_out" {{ $type === 'early_afternoon_out' ? 'selected' : '' }}>Early Afternoon Check-Out</option>
+                            <option value="late_morning_in"     {{ $type === 'late_morning_in'     ? 'selected' : '' }}>Late Morning Check-In (after 09:00)</option>
+                            <option value="early_morning_out"   {{ $type === 'early_morning_out'   ? 'selected' : '' }}>Early Morning Check-Out (before 11:00)</option>
+                            <option value="late_morning_out"    {{ $type === 'late_morning_out'    ? 'selected' : '' }}>Late Morning Check-Out (after 12:00)</option>
+                            <option value="late_afternoon_in"   {{ $type === 'late_afternoon_in'   ? 'selected' : '' }}>Late Afternoon Check-In (after 15:00)</option>
+                            <option value="early_afternoon_out" {{ $type === 'early_afternoon_out' ? 'selected' : '' }}>Early Afternoon Check-Out (before 17:00)</option>
+                            <option value="late_afternoon_out"  {{ $type === 'late_afternoon_out'  ? 'selected' : '' }}>Late Afternoon Check-Out (after 18:00)</option>
                         </select>
                     </div>
 
@@ -174,14 +176,16 @@
                 </div>
             </div>
 
-            {{-- Summary stats --}}
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-4 md:mb-6">
+            {{-- Summary stats (6 categories) --}}
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-4 mb-4 md:mb-6">
                 @php
                     $statDefs = [
-                        ['label'=>'Late Morning In',    'count'=>$stats['late_morning_in'],    'color'=>'amber',  'icon'=>'schedule'],
-                        ['label'=>'Early Morning Out',  'count'=>$stats['early_morning_out'],  'color'=>'orange', 'icon'=>'logout'],
-                        ['label'=>'Late Afternoon In',  'count'=>$stats['late_afternoon_in'],  'color'=>'purple', 'icon'=>'schedule'],
-                        ['label'=>'Early Afternoon Out','count'=>$stats['early_afternoon_out'],'color'=>'red',    'icon'=>'logout'],
+                        ['label'=>'Late Morning In',     'count'=>$stats['late_morning_in'],     'color'=>'amber',  'icon'=>'schedule'],
+                        ['label'=>'Early Morning Out',   'count'=>$stats['early_morning_out'],   'color'=>'orange', 'icon'=>'logout'],
+                        ['label'=>'Late Morning Out',    'count'=>$stats['late_morning_out'],    'color'=>'yellow', 'icon'=>'logout'],
+                        ['label'=>'Late Afternoon In',   'count'=>$stats['late_afternoon_in'],   'color'=>'purple', 'icon'=>'schedule'],
+                        ['label'=>'Early Afternoon Out', 'count'=>$stats['early_afternoon_out'], 'color'=>'red',    'icon'=>'logout'],
+                        ['label'=>'Late Afternoon Out',  'count'=>$stats['late_afternoon_out'],  'color'=>'pink',   'icon'=>'logout'],
                     ];
                 @endphp
                 @foreach($statDefs as $s)
@@ -225,36 +229,51 @@
                                 @php
                                     $flags = [];
 
-                                    // Morning check-in after 09:00
+                                    // Morning IN — late after 09:00
                                     if ($row->morning_check_in && $row->morning_check_in->format('H:i') > '09:00') {
-                                        $flags[] = ['type' => 'late_morning_in', 'label' => 'Late In', 'color' => 'amber', 'time' => $row->morning_check_in->format('h:i A')];
+                                        $flags[] = ['label' => 'Late In', 'color' => 'amber', 'time' => $row->morning_check_in->format('h:i A')];
                                     }
-                                    // Morning check-out before 11:30
-                                    if ($row->morning_check_out && $row->morning_check_out->format('H:i') < '11:30') {
-                                        $flags[] = ['type' => 'early_morning_out', 'label' => 'Early Out', 'color' => 'orange', 'time' => $row->morning_check_out->format('h:i A')];
+                                    // Morning OUT — early before 11:00 OR late after 12:00
+                                    if ($row->morning_check_out && $row->morning_check_out->format('H:i') < '11:00') {
+                                        $flags[] = ['label' => 'Early Out', 'color' => 'orange', 'time' => $row->morning_check_out->format('h:i A')];
+                                    } elseif ($row->morning_check_out && $row->morning_check_out->format('H:i') > '12:00') {
+                                        $flags[] = ['label' => 'Late Out',  'color' => 'yellow', 'time' => $row->morning_check_out->format('h:i A')];
                                     }
-                                    // Afternoon check-in after 15:00
+                                    // Afternoon IN — late after 15:00
                                     if ($row->afternoon_check_in && $row->afternoon_check_in->format('H:i') > '15:00') {
-                                        $flags[] = ['type' => 'late_afternoon_in', 'label' => 'Late In', 'color' => 'purple', 'time' => $row->afternoon_check_in->format('h:i A')];
+                                        $flags[] = ['label' => 'Late In', 'color' => 'purple', 'time' => $row->afternoon_check_in->format('h:i A')];
                                     }
-                                    // Afternoon check-out before 17:00
+                                    // Afternoon OUT — early before 17:00 OR late after 18:00
                                     if ($row->afternoon_check_out && $row->afternoon_check_out->format('H:i') < '17:00') {
-                                        $flags[] = ['type' => 'early_afternoon_out', 'label' => 'Early Out', 'color' => 'red', 'time' => $row->afternoon_check_out->format('h:i A')];
+                                        $flags[] = ['label' => 'Early Out', 'color' => 'red',  'time' => $row->afternoon_check_out->format('h:i A')];
+                                    } elseif ($row->afternoon_check_out && $row->afternoon_check_out->format('H:i') > '18:00') {
+                                        $flags[] = ['label' => 'Late Out',  'color' => 'pink', 'time' => $row->afternoon_check_out->format('h:i A')];
                                     }
 
-                                    // Color map
                                     $colorMap = [
                                         'amber'  => 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',
                                         'orange' => 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800',
+                                        'yellow' => 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800',
                                         'purple' => 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800',
                                         'red'    => 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800',
+                                        'pink'   => 'bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 border-pink-200 dark:border-pink-800',
                                     ];
 
-                                    // Time cell styling helper (inline)
+                                    $okStyle = 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800';
+
+                                    // Cell-level bad checks
                                     $mInBad  = $row->morning_check_in   && $row->morning_check_in->format('H:i')   > '09:00';
-                                    $mOutBad = $row->morning_check_out  && $row->morning_check_out->format('H:i')  < '11:30';
+                                    $mOutColor = null;
+                                    if ($row->morning_check_out) {
+                                        if ($row->morning_check_out->format('H:i') < '11:00')      $mOutColor = 'orange';
+                                        elseif ($row->morning_check_out->format('H:i') > '12:00')  $mOutColor = 'yellow';
+                                    }
                                     $aInBad  = $row->afternoon_check_in  && $row->afternoon_check_in->format('H:i')  > '15:00';
-                                    $aOutBad = $row->afternoon_check_out && $row->afternoon_check_out->format('H:i') < '17:00';
+                                    $aOutColor = null;
+                                    if ($row->afternoon_check_out) {
+                                        if ($row->afternoon_check_out->format('H:i') < '17:00')     $aOutColor = 'red';
+                                        elseif ($row->afternoon_check_out->format('H:i') > '18:00') $aOutColor = 'pink';
+                                    }
                                 @endphp
                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
                                     {{-- Employee --}}
@@ -273,7 +292,7 @@
                                     <td class="py-3 px-3 md:px-6 whitespace-nowrap">
                                         @if($row->morning_check_in)
                                             <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border
-                                                {{ $mInBad ? $colorMap['amber'] : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800' }}">
+                                                {{ $mInBad ? $colorMap['amber'] : $okStyle }}">
                                                 @if($mInBad)<span class="material-symbols-outlined text-sm">warning</span>@endif
                                                 {{ $row->morning_check_in->format('h:i A') }}
                                             </span>
@@ -286,8 +305,8 @@
                                     <td class="py-3 px-3 md:px-6 whitespace-nowrap">
                                         @if($row->morning_check_out)
                                             <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border
-                                                {{ $mOutBad ? $colorMap['orange'] : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800' }}">
-                                                @if($mOutBad)<span class="material-symbols-outlined text-sm">warning</span>@endif
+                                                {{ $mOutColor ? $colorMap[$mOutColor] : $okStyle }}">
+                                                @if($mOutColor)<span class="material-symbols-outlined text-sm">warning</span>@endif
                                                 {{ $row->morning_check_out->format('h:i A') }}
                                             </span>
                                         @else
@@ -299,7 +318,7 @@
                                     <td class="py-3 px-3 md:px-6 whitespace-nowrap">
                                         @if($row->afternoon_check_in)
                                             <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border
-                                                {{ $aInBad ? $colorMap['purple'] : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800' }}">
+                                                {{ $aInBad ? $colorMap['purple'] : $okStyle }}">
                                                 @if($aInBad)<span class="material-symbols-outlined text-sm">warning</span>@endif
                                                 {{ $row->afternoon_check_in->format('h:i A') }}
                                             </span>
@@ -312,8 +331,8 @@
                                     <td class="py-3 px-3 md:px-6 whitespace-nowrap">
                                         @if($row->afternoon_check_out)
                                             <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border
-                                                {{ $aOutBad ? $colorMap['red'] : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800' }}">
-                                                @if($aOutBad)<span class="material-symbols-outlined text-sm">warning</span>@endif
+                                                {{ $aOutColor ? $colorMap[$aOutColor] : $okStyle }}">
+                                                @if($aOutColor)<span class="material-symbols-outlined text-sm">warning</span>@endif
                                                 {{ $row->afternoon_check_out->format('h:i A') }}
                                             </span>
                                         @else
@@ -326,7 +345,7 @@
                                         <div class="flex flex-wrap gap-1">
                                             @foreach($flags as $flag)
                                                 <span class="badge-anim inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold border {{ $colorMap[$flag['color']] }}">
-                                                    🌞{{ $flag['label'] }}
+                                                    {{ $flag['label'] }}
                                                     <span class="opacity-70">({{ $flag['time'] }})</span>
                                                 </span>
                                             @endforeach
@@ -386,7 +405,6 @@
 
     @livewireScripts
     <script>
-        // Mobile menu
         const menuToggle = document.getElementById("menu-toggle");
         const mobileMenu = document.getElementById("mobile-menu");
         if (menuToggle && mobileMenu) {
