@@ -241,8 +241,9 @@ class AdminController extends Controller
         return redirect()->route('map.created')
                        ->with('success', 'Location deleted successfully!');
     }
-  
-    public function report(Request $request)
+
+
+public function report(Request $request)
 {
     $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
     $endDate   = $request->input('end_date',   now()->endOfMonth()->format('Y-m-d'));
@@ -265,29 +266,24 @@ class AdminController extends Controller
         $currentDate->addDay();
     }
 
-    // Only records that fall inside the allowed windows
     $existingAttendances = Attendance::with(['user'])
         ->whereBetween('attendance_date', [$startDate, $endDate])
         ->when($userId, fn($q) => $q->where('user_id', $userId))
-        // Morning IN: NULL or <= 09:00
         ->where(function ($q) {
             $q->whereNull('morning_check_in')
               ->orWhereRaw("TIME(morning_check_in) <= '09:00:00'");
         })
-        // Morning OUT: NULL or BETWEEN 11:00 AND 12:00
         ->where(function ($q) {
             $q->whereNull('morning_check_out')
-              ->orWhereRaw("TIME(morning_check_out) BETWEEN '11:00:00' AND '12:00:00'");
+              ->orWhereRaw("TIME(morning_check_out) BETWEEN '11:00:00' AND '12:30:00'");
         })
-        // Afternoon IN: NULL or <= 15:00
         ->where(function ($q) {
             $q->whereNull('afternoon_check_in')
               ->orWhereRaw("TIME(afternoon_check_in) <= '15:00:00'");
         })
-        // Afternoon OUT: NULL or BETWEEN 17:00 AND 18:00
         ->where(function ($q) {
             $q->whereNull('afternoon_check_out')
-              ->orWhereRaw("TIME(afternoon_check_out) BETWEEN '17:00:00' AND '18:00:00'");
+              ->orWhereRaw("TIME(afternoon_check_out) BETWEEN '17:00:00' AND '18:30:00'");
         })
         ->get()
         ->groupBy(fn($item) => $item->user_id . '_' . $item->attendance_date->format('Y-m-d'));
@@ -359,7 +355,6 @@ class AdminController extends Controller
         'total_afternoon_hours' => $allAttendances->sum(fn($a) => $a->afternoon_work_hours ?? 0),
     ];
 
-    // Top 5 — same window filters
     $topUsers = User::where('role_type', 'user')
         ->withSum(['attendances as total_hours' => function ($query) use ($startDate, $endDate) {
             $query->whereBetween('attendance_date', [$startDate, $endDate])
@@ -370,7 +365,7 @@ class AdminController extends Controller
                   })
                   ->where(function ($q) {
                       $q->whereNull('morning_check_out')
-                        ->orWhereRaw("TIME(morning_check_out) BETWEEN '11:00:00' AND '12:00:00'");
+                        ->orWhereRaw("TIME(morning_check_out) BETWEEN '11:00:00' AND '12:30:00'");
                   })
                   ->where(function ($q) {
                       $q->whereNull('afternoon_check_in')
@@ -378,7 +373,7 @@ class AdminController extends Controller
                   })
                   ->where(function ($q) {
                       $q->whereNull('afternoon_check_out')
-                        ->orWhereRaw("TIME(afternoon_check_out) BETWEEN '17:00:00' AND '18:00:00'");
+                        ->orWhereRaw("TIME(afternoon_check_out) BETWEEN '17:00:00' AND '18:30:00'");
                   });
         }], 'work_hours')
         ->withCount(['attendances as total_days' => function ($query) use ($startDate, $endDate) {
@@ -391,7 +386,7 @@ class AdminController extends Controller
                   })
                   ->where(function ($q) {
                       $q->whereNull('morning_check_out')
-                        ->orWhereRaw("TIME(morning_check_out) BETWEEN '11:00:00' AND '12:00:00'");
+                        ->orWhereRaw("TIME(morning_check_out) BETWEEN '11:00:00' AND '12:30:00'");
                   })
                   ->where(function ($q) {
                       $q->whereNull('afternoon_check_in')
@@ -399,7 +394,7 @@ class AdminController extends Controller
                   })
                   ->where(function ($q) {
                       $q->whereNull('afternoon_check_out')
-                        ->orWhereRaw("TIME(afternoon_check_out) BETWEEN '17:00:00' AND '18:00:00'");
+                        ->orWhereRaw("TIME(afternoon_check_out) BETWEEN '17:00:00' AND '18:30:00'");
                   });
         }])
         ->having('total_hours', '>', 0)
@@ -463,7 +458,7 @@ public function exportCSV(Request $request)
         })
         ->where(function ($q) {
             $q->whereNull('morning_check_out')
-              ->orWhereRaw("TIME(morning_check_out) BETWEEN '11:00:00' AND '12:00:00'");
+              ->orWhereRaw("TIME(morning_check_out) BETWEEN '11:00:00' AND '12:30:00'");
         })
         ->where(function ($q) {
             $q->whereNull('afternoon_check_in')
@@ -471,7 +466,7 @@ public function exportCSV(Request $request)
         })
         ->where(function ($q) {
             $q->whereNull('afternoon_check_out')
-              ->orWhereRaw("TIME(afternoon_check_out) BETWEEN '17:00:00' AND '18:00:00'");
+              ->orWhereRaw("TIME(afternoon_check_out) BETWEEN '17:00:00' AND '18:30:00'");
         })
         ->get()
         ->groupBy(fn($item) => $item->user_id . '_' . $item->attendance_date->format('Y-m-d'));
@@ -716,7 +711,8 @@ public function deleteAllReadNotifications()
     }
 }
 
-    public function reportViolations(Request $request)
+
+public function reportViolations(Request $request)
 {
     $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
     $endDate   = $request->input('end_date',   now()->endOfMonth()->format('Y-m-d'));
@@ -735,7 +731,7 @@ public function deleteAllReadNotifications()
                   ->whereRaw("TIME(morning_check_out) < '11:00:00'");
             } elseif ($type === 'late_morning_out') {
                 $q->whereNotNull('morning_check_out')
-                  ->whereRaw("TIME(morning_check_out) > '12:00:00'");
+                  ->whereRaw("TIME(morning_check_out) > '12:30:00'");
             } elseif ($type === 'late_afternoon_in') {
                 $q->whereRaw("TIME(afternoon_check_in) > '15:00:00'");
             } elseif ($type === 'early_afternoon_out') {
@@ -743,9 +739,8 @@ public function deleteAllReadNotifications()
                   ->whereRaw("TIME(afternoon_check_out) < '17:00:00'");
             } elseif ($type === 'late_afternoon_out') {
                 $q->whereNotNull('afternoon_check_out')
-                  ->whereRaw("TIME(afternoon_check_out) > '18:00:00'");
+                  ->whereRaw("TIME(afternoon_check_out) > '18:30:00'");
             } else {
-                // ANY violation
                 $q->where(function ($inner) {
                     $inner->whereRaw("TIME(morning_check_in) > '09:00:00'")
                           ->orWhere(function ($o) {
@@ -754,7 +749,7 @@ public function deleteAllReadNotifications()
                           })
                           ->orWhere(function ($o) {
                               $o->whereNotNull('morning_check_out')
-                                ->whereRaw("TIME(morning_check_out) > '12:00:00'");
+                                ->whereRaw("TIME(morning_check_out) > '12:30:00'");
                           })
                           ->orWhereRaw("TIME(afternoon_check_in) > '15:00:00'")
                           ->orWhere(function ($o) {
@@ -763,7 +758,7 @@ public function deleteAllReadNotifications()
                           })
                           ->orWhere(function ($o) {
                               $o->whereNotNull('afternoon_check_out')
-                                ->whereRaw("TIME(afternoon_check_out) > '18:00:00'");
+                                ->whereRaw("TIME(afternoon_check_out) > '18:30:00'");
                           });
                 });
             }
@@ -780,10 +775,10 @@ public function deleteAllReadNotifications()
     $stats = [
         'late_morning_in'     => $allForStats->filter(fn($a) => $a->morning_check_in    && $a->morning_check_in->format('H:i')    > '09:00')->count(),
         'early_morning_out'   => $allForStats->filter(fn($a) => $a->morning_check_out   && $a->morning_check_out->format('H:i')   < '11:00')->count(),
-        'late_morning_out'    => $allForStats->filter(fn($a) => $a->morning_check_out   && $a->morning_check_out->format('H:i')   > '12:00')->count(),
+        'late_morning_out'    => $allForStats->filter(fn($a) => $a->morning_check_out   && $a->morning_check_out->format('H:i')   > '12:30')->count(),
         'late_afternoon_in'   => $allForStats->filter(fn($a) => $a->afternoon_check_in  && $a->afternoon_check_in->format('H:i')  > '15:00')->count(),
         'early_afternoon_out' => $allForStats->filter(fn($a) => $a->afternoon_check_out && $a->afternoon_check_out->format('H:i') < '17:00')->count(),
-        'late_afternoon_out'  => $allForStats->filter(fn($a) => $a->afternoon_check_out && $a->afternoon_check_out->format('H:i') > '18:00')->count(),
+        'late_afternoon_out'  => $allForStats->filter(fn($a) => $a->afternoon_check_out && $a->afternoon_check_out->format('H:i') > '18:30')->count(),
     ];
 
     $violations = $query->paginate(20)->withQueryString();
@@ -814,7 +809,7 @@ public function exportViolationsCSV(Request $request)
                   ->whereRaw("TIME(morning_check_out) < '11:00:00'");
             } elseif ($type === 'late_morning_out') {
                 $q->whereNotNull('morning_check_out')
-                  ->whereRaw("TIME(morning_check_out) > '12:00:00'");
+                  ->whereRaw("TIME(morning_check_out) > '12:30:00'");
             } elseif ($type === 'late_afternoon_in') {
                 $q->whereRaw("TIME(afternoon_check_in) > '15:00:00'");
             } elseif ($type === 'early_afternoon_out') {
@@ -822,7 +817,7 @@ public function exportViolationsCSV(Request $request)
                   ->whereRaw("TIME(afternoon_check_out) < '17:00:00'");
             } elseif ($type === 'late_afternoon_out') {
                 $q->whereNotNull('afternoon_check_out')
-                  ->whereRaw("TIME(afternoon_check_out) > '18:00:00'");
+                  ->whereRaw("TIME(afternoon_check_out) > '18:30:00'");
             } else {
                 $q->where(function ($inner) {
                     $inner->whereRaw("TIME(morning_check_in) > '09:00:00'")
@@ -832,7 +827,7 @@ public function exportViolationsCSV(Request $request)
                           })
                           ->orWhere(function ($o) {
                               $o->whereNotNull('morning_check_out')
-                                ->whereRaw("TIME(morning_check_out) > '12:00:00'");
+                                ->whereRaw("TIME(morning_check_out) > '12:30:00'");
                           })
                           ->orWhereRaw("TIME(afternoon_check_in) > '15:00:00'")
                           ->orWhere(function ($o) {
@@ -841,7 +836,7 @@ public function exportViolationsCSV(Request $request)
                           })
                           ->orWhere(function ($o) {
                               $o->whereNotNull('afternoon_check_out')
-                                ->whereRaw("TIME(afternoon_check_out) > '18:00:00'");
+                                ->whereRaw("TIME(afternoon_check_out) > '18:30:00'");
                           });
                 });
             }
@@ -882,7 +877,7 @@ public function exportViolationsCSV(Request $request)
 
             if ($mOut && $mOut->format('H:i') < '11:00') {
                 $mOutViolation = 'Early (' . $mOut->format('h:i A') . ')';
-            } elseif ($mOut && $mOut->format('H:i') > '12:00') {
+            } elseif ($mOut && $mOut->format('H:i') > '12:30') {
                 $mOutViolation = 'Late (' . $mOut->format('h:i A') . ')';
             } else {
                 $mOutViolation = '';
@@ -893,7 +888,7 @@ public function exportViolationsCSV(Request $request)
 
             if ($aOut && $aOut->format('H:i') < '17:00') {
                 $aOutViolation = 'Early (' . $aOut->format('h:i A') . ')';
-            } elseif ($aOut && $aOut->format('H:i') > '18:00') {
+            } elseif ($aOut && $aOut->format('H:i') > '18:30') {
                 $aOutViolation = 'Late (' . $aOut->format('h:i A') . ')';
             } else {
                 $aOutViolation = '';
