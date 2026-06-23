@@ -17,41 +17,42 @@ use Illuminate\Support\Facades\Log;
 class CheckInController extends Controller
 {
     protected $telegram;
- 
+
     public function __construct(TelegramService $telegram)
     {
         $this->telegram = $telegram;
     }
- 
+
     public function index()
     {
         $user = Auth::user();
- 
+
         $todayAttendance = Attendance::where('user_id', $user->id)
-                                    ->whereDate('attendance_date', today())
-                                    ->first();
- 
+                                     ->whereDate('attendance_date', today())
+                                     ->first();
+
         return view('home.checkin', compact('todayAttendance'));
     }
- 
+
     public function verify(Request $request)
     {
         $user = Auth::user();
- 
+
         $todayAttendance = Attendance::where('user_id', $user->id)
-                                    ->whereDate('attendance_date', today())
-                                    ->first();
- 
+                                     ->whereDate('attendance_date', today())
+                                     ->first();
+
         $officeLocation = OfficeLocation::getDefaultLocation();
- 
+
         if (!$officeLocation) {
-            return redirect()->route('checkin')
+            return redirect()->route('error')
+                             ->with('action', 'checkin')
                              ->with('error', 'No office location configured. Please contact administrator.');
         }
- 
+
         return view('verify.map', compact('todayAttendance', 'officeLocation'));
     }
- 
+
     public function submit(Request $request)
     {
         $request->validate([
@@ -61,16 +62,18 @@ class CheckInController extends Controller
             'session'   => 'required|in:morning,afternoon',
             'note'      => 'nullable|string|max:255',
         ]);
- 
+
         $user           = Auth::user();
         $officeLocation = OfficeLocation::getDefaultLocation();
- 
+
         if (!$officeLocation) {
-            return redirect('/checkin')->with('error', 'No office location configured. Please contact administrator.');
+            return redirect()->route('error')
+                             ->with('action', $request->action)
+                             ->with('error', 'No office location configured. Please contact administrator.');
         }
- 
+
         $distance = $officeLocation->calculateDistance($request->latitude, $request->longitude);
- 
+
         if (!$officeLocation->isWithinRadius($request->latitude, $request->longitude)) {
             try {
                 $alertMessage = $this->telegram->sendLocationAlert($user, $distance, $officeLocation);
@@ -79,49 +82,61 @@ class CheckInController extends Controller
             } catch (\Exception $e) {
                 Log::error('Failed to send location alert: ' . $e->getMessage());
             }
- 
-            return redirect('/checkin')->with('error', "You are {$distance}m away from {$officeLocation->name}. You must be within {$officeLocation->radius}m to check in.");
+
+            return redirect()->route('error')
+                             ->with('action', $request->action)
+                             ->with('error', "You are {$distance}m away from {$officeLocation->name}. You must be within {$officeLocation->radius}m to check in.");
         }
- 
+
         return $request->action === 'checkin'
             ? $this->processCheckIn($request, $officeLocation)
             : $this->processCheckOut($request, $officeLocation);
     }
- 
+
     // ─────────────────────────────────────────────────────────────────────────
-    //  CHECK IN  (no blocking — violations silently flagged in note)
+    //  CHECK IN
     // ─────────────────────────────────────────────────────────────────────────
     private function processCheckIn(Request $request, OfficeLocation $officeLocation)
     {
         $user    = Auth::user();
         $session = $request->session;
- 
+
         $existingAttendance = Attendance::where('user_id', $user->id)
                                         ->whereDate('attendance_date', today())
                                         ->first();
- 
+
         // Already checked in for this session
         if ($existingAttendance) {
-            if ($session === 'morning'   && $existingAttendance->morning_check_in)   return redirect('/checkin')->with('error', 'Already checked in for morning.');
-            if ($session === 'afternoon' && $existingAttendance->afternoon_check_in) return redirect('/checkin')->with('error', 'Already checked in for afternoon.');
+            if ($session === 'morning' && $existingAttendance->morning_check_in) {
+                return redirect()->route('error')
+                                 ->with('action', 'checkin')
+                                 ->with('error', 'Already checked in for morning session.');
+            }
+            if ($session === 'afternoon' && $existingAttendance->afternoon_check_in) {
+                return redirect()->route('error')
+                                 ->with('action', 'checkin')
+                                 ->with('error', 'Already checked in for afternoon session.');
+            }
         }
- 
+
         // Day off
         if (AttendanceOffDay::where('user_id', $user->id)->whereDate('off_date', today())->exists()) {
-            return redirect('/checkin')->with('error', 'Today is your scheduled day off.');
+            return redirect()->route('error')
+                             ->with('action', 'checkin')
+                             ->with('error', 'Today is your scheduled day off.');
         }
- 
+
         $currentTime = now()->format('H:i');
- 
+
         // ── Violation flags (no blocking, just record) ──────────────────────
         $violations = [];
         if ($session === 'morning'   && $currentTime > '09:00') $violations[] = "Late morning check-in at {$currentTime}";
         if ($session === 'afternoon' && $currentTime > '15:00') $violations[] = "Late afternoon check-in at {$currentTime}";
- 
+
         // ── Status from schedule ────────────────────────────────────────────
         $schedule = AttendanceSchedule::where('user_id', $user->id)->where('is_active', true)->first();
         $status   = 'on_time';
- 
+
         if ($schedule) {
             $scheduledTime = Carbon::parse(
                 today()->format('Y-m-d') . ' ' . (
@@ -134,96 +149,105 @@ class CheckInController extends Controller
                 $status = 'late';
             }
         }
- 
+
         // Violations always mark late
         if (!empty($violations)) $status = 'late';
- 
+
         $checkInField = $session === 'morning' ? 'morning_check_in' : 'afternoon_check_in';
- 
+
         $updateData = [
             $checkInField => now(),
             'latitude'    => $request->latitude,
             'longitude'   => $request->longitude,
             'note'        => !empty($violations) ? '[' . implode('] [', $violations) . ']' : null,
         ];
- 
+
         // Only upgrade status to late, never downgrade
         if (!$existingAttendance || $existingAttendance->status !== 'late') {
             $updateData['status'] = $status;
         }
- 
+
         $attendance = Attendance::updateOrCreate(
             ['user_id' => $user->id, 'attendance_date' => today()],
             $updateData
         );
         $attendance->refresh();
- 
+
         $this->sendCheckInNotifications($user, $attendance, $officeLocation, $schedule, $session);
         $this->createCheckInNotifications($user, $attendance, $officeLocation, $session);
- 
+
         $sessionName = ucfirst($session);
         $statusLabel = ucfirst(str_replace('_', ' ', $status));
- 
-        // 🔊 Redirect to /checkin (not /) so the flash-message sound system
-        //    on the check-in page can play the check-in success chime.
-        return redirect('/checkin')->with('success', "{$sessionName} check-in successful at {$officeLocation->name}! Status: {$statusLabel}");
+
+        return redirect()->route('success')
+                         ->with('action',  'checkin')
+                         ->with('session', $session)
+                         ->with('success', "{$sessionName} check-in successful at {$officeLocation->name}! Status: {$statusLabel}");
     }
- 
+
     // ─────────────────────────────────────────────────────────────────────────
-    //  CHECK OUT  (no blocking — violations silently flagged in note)
+    //  CHECK OUT
     // ─────────────────────────────────────────────────────────────────────────
     private function processCheckOut(Request $request, OfficeLocation $officeLocation)
     {
         $user    = Auth::user();
         $session = $request->session;
- 
+
         $attendance = Attendance::where('user_id', $user->id)
                                 ->whereDate('attendance_date', today())
                                 ->first();
- 
+
         $checkInField  = $session === 'morning' ? 'morning_check_in'  : 'afternoon_check_in';
         $checkOutField = $session === 'morning' ? 'morning_check_out' : 'afternoon_check_out';
- 
+
         if (!$attendance || !$attendance->$checkInField) {
-            return redirect('/checkin')->with('error', "You must check in for the {$session} session first.");
+            return redirect()->route('error')
+                             ->with('action', 'checkout')
+                             ->with('error', "You must check in for the {$session} session first.");
         }
+
         if ($attendance->$checkOutField) {
-            return redirect('/checkin')->with('error', "You have already checked out for the {$session} session.");
+            return redirect()->route('error')
+                             ->with('action', 'checkout')
+                             ->with('error', "You have already checked out for the {$session} session.");
         }
- 
+
         $currentTime = now()->format('H:i');
- 
+
         // ── Violation flags (no blocking) ───────────────────────────────────
         $violations = [];
         if ($session === 'morning'   && $currentTime < '11:30') $violations[] = "Early morning check-out at {$currentTime}";
         if ($session === 'afternoon' && $currentTime < '17:00') $violations[] = "Early afternoon check-out at {$currentTime}";
- 
+
         // Append new violation flags to any existing note
         $existingNote = $attendance->note ?? '';
         $newFlags     = !empty($violations) ? '[' . implode('] [', $violations) . ']' : '';
         $finalNote    = trim(implode(' | ', array_filter([$existingNote, $newFlags]))) ?: null;
- 
+
         $attendance->update([
             $checkOutField => now(),
             'note'         => $finalNote,
         ]);
- 
+
         $attendance->calculateWorkHours();
         $attendance->refresh();
- 
+
         $this->sendCheckOutNotifications($user, $attendance, $officeLocation, $session);
         $this->createCheckOutNotifications($user, $attendance, $officeLocation, $session);
- 
+
         $sessionName  = ucfirst($session);
         $sessionHours = $session === 'morning'
             ? $attendance->formatted_morning_hours
             : $attendance->formatted_afternoon_hours;
- 
-        return redirect('/checkin')->with('success', "{$sessionName} check-out successful! {$sessionHours} | Total: " . $attendance->formatted_work_hours);
+
+        return redirect()->route('success')
+                         ->with('action',  'checkout')
+                         ->with('session', $session)
+                         ->with('success', "{$sessionName} check-out successful! {$sessionHours} | Total: " . $attendance->formatted_work_hours);
     }
- 
+
     // ─────────────────────────────────────────────────────────────────────────
-    //  NOTIFICATIONS (unchanged)
+    //  NOTIFICATIONS
     // ─────────────────────────────────────────────────────────────────────────
     private function sendCheckInNotifications($user, $attendance, $officeLocation, $schedule = null, $session = 'morning')
     {
@@ -236,7 +260,7 @@ class CheckInController extends Controller
             Log::error('Telegram check-in failed: ' . $e->getMessage());
         }
     }
- 
+
     private function sendCheckOutNotifications($user, $attendance, $officeLocation, $session = 'morning')
     {
         try {
@@ -248,7 +272,7 @@ class CheckInController extends Controller
             Log::error('Telegram check-out failed: ' . $e->getMessage());
         }
     }
- 
+
     private function createCheckInNotifications($user, $attendance, $officeLocation, $session = 'morning')
     {
         try {
@@ -256,15 +280,15 @@ class CheckInController extends Controller
             $checkInTime = $session === 'morning' ? $attendance->morning_check_in : $attendance->afternoon_check_in;
             $sessionIcon = $session === 'morning' ? '🌞' : '🌅';
             $sessionName = ucfirst($session);
- 
+
             $isLate = $attendance->status === 'late';
             $title  = $isLate
                 ? "⚠️ Late {$sessionName} Check-In: {$user->name}"
                 : "{$sessionIcon} {$sessionName} Check-In: {$user->name}";
- 
+
             $message = "{$user->name} checked in for {$session} at {$checkInTime->format('h:i A')} at {$officeLocation->name}";
             if ($attendance->note) $message .= " | {$attendance->note}";
- 
+
             foreach ($admins as $admin) {
                 Notification::create([
                     'user_id' => $admin->id,
@@ -272,16 +296,16 @@ class CheckInController extends Controller
                     'title'   => $title,
                     'message' => $message,
                     'data'    => [
-                        'attendance_id' => $attendance->id,
-                        'employee_id'   => $user->id,
-                        'employee_name' => $user->name,
-                        'employee_email'=> $user->email,
-                        'session'       => $session,
-                        'time'          => $checkInTime->format('h:i A'),
-                        'location'      => $officeLocation->name,
-                        'status'        => $attendance->status,
-                        'note'          => $attendance->note,
-                        'coordinates'   => ['lat' => $attendance->latitude, 'lng' => $attendance->longitude],
+                        'attendance_id'  => $attendance->id,
+                        'employee_id'    => $user->id,
+                        'employee_name'  => $user->name,
+                        'employee_email' => $user->email,
+                        'session'        => $session,
+                        'time'           => $checkInTime->format('h:i A'),
+                        'location'       => $officeLocation->name,
+                        'status'         => $attendance->status,
+                        'note'           => $attendance->note,
+                        'coordinates'    => ['lat' => $attendance->latitude, 'lng' => $attendance->longitude],
                     ],
                 ]);
             }
@@ -289,7 +313,7 @@ class CheckInController extends Controller
             Log::error('Check-in notification failed: ' . $e->getMessage());
         }
     }
- 
+
     private function createCheckOutNotifications($user, $attendance, $officeLocation, $session = 'morning')
     {
         try {
@@ -298,10 +322,10 @@ class CheckInController extends Controller
             $sessionHours = $session === 'morning' ? $attendance->formatted_morning_hours : $attendance->formatted_afternoon_hours;
             $sessionIcon  = $session === 'morning' ? '🌞' : '🌅';
             $sessionName  = ucfirst($session);
- 
+
             $message = "{$user->name} checked out from {$session} at {$checkOutTime->format('h:i A')} • {$sessionHours} • Total: {$attendance->formatted_work_hours}";
             if ($attendance->note) $message .= " | {$attendance->note}";
- 
+
             foreach ($admins as $admin) {
                 Notification::create([
                     'user_id' => $admin->id,
@@ -327,7 +351,7 @@ class CheckInController extends Controller
             Log::error('Check-out notification failed: ' . $e->getMessage());
         }
     }
- 
+
     private function createLocationAlertNotifications($user, $distance, $officeLocation)
     {
         try {

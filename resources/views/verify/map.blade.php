@@ -224,10 +224,10 @@ const SoundManager = {
         this.isMuted = localStorage.getItem(this.STORAGE_KEY) === 'true';
 
         this.sounds = {
-            checkin:       new Audio("{{ asset('sounds/scan-checkin.mp3') }}"),
-            checkout:      new Audio("{{ asset('sounds/scan-checkout.mp3') }}"),
-            errorCheckin:  new Audio("{{ asset('sounds/error-scan-checkin.mp3') }}"),
-            errorCheckout: new Audio("{{ asset('sounds/error-scan-checkout.mp3') }}"),
+            // checkin:       new Audio("{{ asset('sounds/scan-checkin.mp3') }}"),
+            // checkout:      new Audio("{{ asset('sounds/scan-checkout.mp3') }}"),
+            // errorCheckin:  new Audio("{{ asset('sounds/error-scan-checkin.mp3') }}"),
+            // errorCheckout: new Audio("{{ asset('sounds/error-scan-checkout.mp3') }}"),
         };
         Object.values(this.sounds).forEach(a => { a.preload = 'auto'; a.volume = 0.8; });
 

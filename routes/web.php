@@ -51,7 +51,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/mission/verify', [MissionController::class, 'verify'])->name('attendance.mission');
     Route::get('/my-mission', [MissionController::class, 'mymission'])->name('missions.my');
     Route::post('/attendance/mission', [MissionController::class, 'storeMission'])->name('attendance.mission.store');
-    
+    Route::get('/success', fn () => view('success'))->name('success');
+    Route::get('/error',   fn () => view('error'))->name('error');
 
     Route::get('/telegram/bind', [TelegramController::class, 'initiateBind'])->name('telegram.bind');
     Route::get('/telegram/unbind', [TelegramController::class, 'unbind'])->name('telegram.unbind');
